@@ -195,7 +195,7 @@ class ProductLookup {
 			'parent_id'          => $parent_id,
 			'name'               => wp_strip_all_tags( $product->get_name() ),
 			'sku'                => $product->get_sku(),
-			'gtin'               => (string) $product->get_meta( self::GTIN_META ),
+			'gtin'               => (string) $product->get_global_unique_id(),
 			'price_html'         => $product->get_price_html(),
 			'thumbnail'          => $thumb_id ? wp_get_attachment_image_url( $thumb_id, 'woocommerce_thumbnail' ) : '',
 			'stock_status'       => $product->get_stock_status(),

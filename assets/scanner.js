@@ -31,6 +31,9 @@
 	 */
 	var ABSENT_MS = 900;
 
+	/** How long to wait before resending scans whose request failed. */
+	var RETRY_MS = 5000;
+
 	/** Where scans wait out a lost connection or a lost session. */
 	var QUEUE_KEY = 'b2bs.queue';
 
@@ -43,7 +46,9 @@
 		rafId: 0,
 		lastCode: '',
 		lastSeen: 0,
-		busy: false,
+		// Scans go to the server one at a time, in the order they were read.
+		chain: Promise.resolve(),
+		retryTimer: 0,
 		torchOn: false,
 		wakeLock: null,
 		queue: readQueue()
@@ -85,6 +90,7 @@
 				if ( res.ok ) { return data; }
 				var err = new Error( data.message || 'error' );
 				err.status = res.status;
+				err.code = data.code || '';
 				err.data = data.data || {};
 				throw err;
 			} );
@@ -362,7 +368,14 @@
 				renderOrder( res );
 				refreshCart();
 			} )
-			.catch( function ( err ) { failed( String( productId ), err ); } );
+			.catch( function ( err ) {
+				// Not a scan: nothing to queue or replay, only to explain.
+				if ( sessionLost( err ) ) {
+					askToSignIn();
+				} else {
+					toast( isNetworkError( err ) ? t.offline : err.message, null, 'error' );
+				}
+			} );
 	}
 
 	function loadOrder() {
@@ -416,18 +429,28 @@
 		lookup( code );
 	}
 
-	function queueCode( code ) {
+	/** `quiet` for a replayed scan going back: it was announced the first time. */
+	function queueCode( code, quiet ) {
 		state.queue.push( { code: code, at: Date.now() } );
 		writeQueue();
-		toast( code + ' · ' + t.pending, null, 'pending' );
+		if ( ! quiet ) { toast( code + ' · ' + t.pending, null, 'pending' ); }
 	}
 
-	function lookup( code ) {
-		if ( state.busy ) { return; }
-		state.busy = true;
+	/*
+	 * A scan that arrives while the previous one is still on its way waits its
+	 * turn rather than being dropped. Working along a shelf, the next box is
+	 * often read before the last reply is back, and a scan that vanished
+	 * without a beep or a message was a unit missing from the order.
+	 */
+	function lookup( code, replay ) {
+		state.chain = state.chain
+			.then( function () { return send( code, replay ); } )
+			.catch( function () {} ); // One bad reply must not stop every scan after it.
+	}
 
-		// add=1 resolves the code and puts the unit on the order in one call.
-		api( '/lookup?add=1&code=' + encodeURIComponent( code ) )
+	function send( code, replay ) {
+		// POST with add=1 resolves the code and puts the unit on the order in one call.
+		return api( '/lookup', { method: 'POST', body: { code: code, add: true } } )
 			.then( function ( data ) {
 				if ( 'out_of_stock' === data.status ) {
 					outOfStock( data.product );
@@ -441,8 +464,7 @@
 
 				applied( data.product, data, 'backorder' === data.status );
 			} )
-			.catch( function ( err ) { failed( code, err ); } )
-			.finally( function () { state.busy = false; } );
+			.catch( function ( err ) { failed( code, err, replay ); } );
 	}
 
 	/** Used when the partner accepts a replacement, which needs its own add. */
@@ -511,14 +533,43 @@
 		} ], 'error' );
 	}
 
-	function failed( code, err ) {
-		if ( 401 === err.status || 403 === err.status ) {
+	/*
+	 * Signed out, or the nonce expired - WordPress answers the latter with 403
+	 * rest_cookie_invalid_nonce. Any other 403 is the scanner refusing this
+	 * account, which signing in again would not change.
+	 */
+	function sessionLost( err ) {
+		return 401 === err.status || ( 403 === err.status && 'rest_cookie_invalid_nonce' === err.code );
+	}
+
+	/** fetch() itself failed: no reply at all, whatever navigator.onLine says. */
+	function isNetworkError( err ) {
+		return ! err.status;
+	}
+
+	function askToSignIn() {
+		toast( t.sessionLost, [ {
+			label: t.signIn,
+			run: function () { window.location.href = cfg.loginUrl; }
+		} ], 'error' );
+	}
+
+	function failed( code, err, replay ) {
+		if ( sessionLost( err ) ) {
 			// Keep what has not been applied yet, then send them to sign in.
-			queueCode( code );
-			toast( t.sessionLost, [ {
-				label: t.signIn,
-				run: function () { window.location.href = cfg.loginUrl; }
-			} ], 'error' );
+			queueCode( code, replay );
+			askToSignIn();
+			return;
+		}
+
+		/*
+		 * navigator.onLine only knows about the device's own link. On warehouse
+		 * Wi-Fi it says "online" while requests fail, so a failed request is
+		 * itself the sign: keep the code and try again shortly.
+		 */
+		if ( isNetworkError( err ) ) {
+			queueCode( code, replay );
+			retrySoon();
 			return;
 		}
 
@@ -530,23 +581,31 @@
 		toast( err.message || String( code ), null, 'error' );
 	}
 
-	/** Anything held while offline or signed out, replayed in order. */
-	function drainQueue() {
+	function retrySoon() {
+		if ( state.retryTimer ) { return; }
+
+		state.retryTimer = setTimeout( function () {
+			state.retryTimer = 0;
+			drainQueue( true );
+		}, RETRY_MS );
+	}
+
+	/**
+	 * Anything held while offline or signed out, replayed in order - each one
+	 * after the previous reply, through the same chain as a live scan. Codes
+	 * that fail again on the network go back on the queue for the next try.
+	 */
+	function drainQueue( retry ) {
 		if ( ! state.queue.length || ! navigator.onLine ) { return; }
 
 		var pending = state.queue.slice();
 		state.queue = [];
 		writeQueue();
 
-		toast( t.restored, null, 'ok' );
+		// A timed retry stays silent; coming back online or signed in is news.
+		if ( true !== retry ) { toast( t.restored, null, 'ok' ); }
 
-		( function next() {
-			var item = pending.shift();
-			if ( ! item ) { return; }
-			state.busy = false;
-			lookup( item.code );
-			setTimeout( next, 400 );
-		} )();
+		pending.forEach( function ( item ) { lookup( item.code, true ); } );
 	}
 
 	/* ------------------------------------------------------------- decoding */

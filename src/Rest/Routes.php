@@ -37,8 +37,13 @@ class Routes {
 	}
 
 	public static function routes(): void {
+		/*
+		 * GET only looks; POST with add=1 also puts a unit on the order. A
+		 * request that changes the cart must not be one a browser, a proxy or
+		 * a prefetch may repeat on its own.
+		 */
 		register_rest_route( self::NAMESPACE_V1, '/lookup', array(
-			'methods'             => 'GET',
+			'methods'             => 'GET, POST',
 			'callback'            => array( __CLASS__, 'lookup' ),
 			'permission_callback' => array( __CLASS__, 'may_scan' ),
 			'args'                => array(
@@ -122,11 +127,13 @@ class Routes {
 	}
 
 	/**
-	 * A barcode as the camera read it: digits only, and short enough that a
-	 * misread cannot become a long LIKE-shaped string in the log.
+	 * A code as scanned or typed: plain text, trimmed, no longer than the log
+	 * column. Not narrowed to letters and digits - SKUs here carry dots,
+	 * slashes and spaces (`OC.1.08.5.1`, `1SUN/19BB0001000`, `HY-1322 IN01`),
+	 * and stripping them turned a valid SKU into a miss.
 	 */
 	public static function clean_code( $value ): string {
-		return substr( preg_replace( '/[^0-9A-Za-z\-_]/', '', (string) $value ), 0, 64 );
+		return trim( mb_substr( sanitize_text_field( (string) $value ), 0, 64 ) );
 	}
 
 	public static function may_scan() {
@@ -194,7 +201,7 @@ class Routes {
 			$payload['status'] = 'backorder';
 		}
 
-		if ( $request->get_param( 'add' ) && in_array( $payload['status'], array( ProductLookup::OK, 'backorder' ), true ) ) {
+		if ( 'POST' === $request->get_method() && $request->get_param( 'add' ) && in_array( $payload['status'], array( ProductLookup::OK, 'backorder' ), true ) ) {
 			$added = self::apply_delta( $product, 1, null );
 
 			if ( is_wp_error( $added ) ) {
@@ -219,20 +226,11 @@ class Routes {
 	public static function cart( WP_REST_Request $request ) {
 		$product_id = (int) $request->get_param( 'product_id' );
 		$delta      = (int) $request->get_param( 'delta' );
+		$set        = $request->get_param( 'set' );
 		$product    = wc_get_product( $product_id );
 
 		if ( ! $product instanceof WC_Product ) {
 			return new WP_Error( 'b2b_scanner_bad_product', __( 'Invalid product.', 'beltoft-scanner' ), array( 'status' => 400 ) );
-		}
-
-		$verdict = ProductLookup::assess( $product, get_current_user_id() );
-
-		if ( ProductLookup::OK !== $verdict['status'] && $delta > 0 ) {
-			return new WP_Error(
-				'b2b_scanner_not_orderable',
-				__( 'This product cannot be added.', 'beltoft-scanner' ),
-				array( 'status' => 409, 'reason' => $verdict['status'] )
-			);
 		}
 
 		/*
@@ -246,7 +244,29 @@ class Routes {
 			return new WP_Error( 'b2b_scanner_no_cart', __( 'Cart unavailable.', 'beltoft-scanner' ), array( 'status' => 500 ) );
 		}
 
-		$result = self::apply_delta( $product, $delta, $request->get_param( 'set' ) );
+		/*
+		 * Judged on where the quantity ends up, not on how it was asked for. A
+		 * line that can no longer be ordered - sold out, hidden, discontinued -
+		 * can always come down or off, and nothing can go up unless it could
+		 * be ordered now, however the request spells it (`set`, a `delta` of
+		 * zero, or both).
+		 */
+		$current = self::line( $product )['quantity'];
+		$target  = null === $set ? $current + $delta : (int) $set;
+
+		if ( $target > $current ) {
+			$verdict = ProductLookup::assess( $product, get_current_user_id() );
+
+			if ( ProductLookup::OK !== $verdict['status'] ) {
+				return new WP_Error(
+					'b2b_scanner_not_orderable',
+					__( 'This product cannot be added.', 'beltoft-scanner' ),
+					array( 'status' => 409, 'reason' => $verdict['status'] )
+				);
+			}
+		}
+
+		$result = self::apply_delta( $product, $delta, $set );
 
 		if ( is_wp_error( $result ) ) {
 			return $result;
@@ -274,28 +294,9 @@ class Routes {
 		$parent_id    = $product->get_parent_id();
 		$variation_id = $parent_id ? $product->get_id() : 0;
 		$product_id   = $parent_id ?: $product->get_id();
-
-		/*
-		 * Found by walking the cart rather than by generate_cart_id().
-		 *
-		 * That helper hashes the product id together with whatever
-		 * cart_item_data was attached when the line was created, and something
-		 * on this install attaches some - a line added from the ordering page
-		 * and the same line recreated here hash differently. The symptom was a
-		 * scan that always believed the cart was empty: it read zero, wrote
-		 * one, and three scans of the same box still left a quantity of one.
-		 */
-		$existing = '';
-		$current  = 0;
-
-		foreach ( WC()->cart->get_cart() as $key => $line ) {
-			if ( (int) ( $line['product_id'] ?? 0 ) === $product_id
-				&& (int) ( $line['variation_id'] ?? 0 ) === $variation_id ) {
-				$existing = $key;
-				$current  = (int) ( $line['quantity'] ?? 0 );
-				break;
-			}
-		}
+		$line         = self::line( $product );
+		$existing     = $line['key'];
+		$current      = $line['quantity'];
 
 		$target = null === $set ? max( 0, $current + $delta ) : max( 0, (int) $set );
 
@@ -337,6 +338,38 @@ class Routes {
 			'capped'     => $capped,
 			'name'       => wp_strip_all_tags( $product->get_name() ),
 		);
+	}
+
+	/**
+	 * This product's line in the cart: its key and quantity, or '' and 0.
+	 *
+	 * Found by walking the cart rather than by generate_cart_id(). That helper
+	 * hashes the product id together with whatever cart_item_data was attached
+	 * when the line was created, and something on this install attaches some -
+	 * a line added from the ordering page and the same line recreated here
+	 * hash differently. The symptom was a scan that always believed the cart
+	 * was empty: it read zero, wrote one, and three scans of the same box
+	 * still left a quantity of one.
+	 *
+	 * @return array{key:string, quantity:int}
+	 */
+	private static function line( WC_Product $product ): array {
+		if ( ! self::ready_cart() ) {
+			return array( 'key' => '', 'quantity' => 0 );
+		}
+
+		$parent_id    = $product->get_parent_id();
+		$variation_id = $parent_id ? $product->get_id() : 0;
+		$product_id   = $parent_id ?: $product->get_id();
+
+		foreach ( WC()->cart->get_cart() as $key => $line ) {
+			if ( (int) ( $line['product_id'] ?? 0 ) === $product_id
+				&& (int) ( $line['variation_id'] ?? 0 ) === $variation_id ) {
+				return array( 'key' => (string) $key, 'quantity' => (int) ( $line['quantity'] ?? 0 ) );
+			}
+		}
+
+		return array( 'key' => '', 'quantity' => 0 );
 	}
 
 	/**
@@ -437,7 +470,14 @@ class Routes {
 		$product    = wc_get_product( $product_id );
 		$user       = wp_get_current_user();
 
-		if ( ! $product instanceof WC_Product ) {
+		/*
+		 * A product the catalog rules refuse this user is answered exactly like
+		 * one that does not exist, as the lookup does - otherwise the reply, and
+		 * the email when stock returns, would reveal it.
+		 */
+		$verdict = $product instanceof WC_Product ? ProductLookup::assess( $product, get_current_user_id() ) : null;
+
+		if ( ! $verdict || in_array( $verdict['status'], array( Log::NOT_VISIBLE, Log::NOT_PURCHASABLE ), true ) ) {
 			return new WP_Error( 'b2b_scanner_bad_product', __( 'Invalid product.', 'beltoft-scanner' ), array( 'status' => 400 ) );
 		}
 
@@ -460,6 +500,14 @@ class Routes {
 			'gdpr_consent'      => 1,
 			'unsubscribe_token' => wp_generate_password( 32, false ),
 		) );
+
+		if ( false === $id ) {
+			return new WP_Error(
+				'b2b_scanner_notify_failed',
+				__( 'Back-in-stock alerts are not available at the moment.', 'beltoft-scanner' ),
+				array( 'status' => 500 )
+			);
+		}
 
 		return new WP_REST_Response(
 			array(

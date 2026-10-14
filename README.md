@@ -10,7 +10,8 @@ The scanner is a **core that other plugins plug into**. On its own it shows nowh
 - A manual field takes an EAN or a SKU, for codes the camera cannot read. The camera does not read SKU barcodes (Code 128 etc.) - only EAN.
 - Looks the code up by GTIN (`_global_unique_id`, variations first), then by SKU.
 - Adds to the WooCommerce cart in one call per scan. The panel shows the whole order, newest first, with −/+, a typed quantity and remove on each line, the subtotal and a link to checkout. Quantities are capped at the stock when backorders are not allowed. The page's cart fragments are refreshed after each change.
-- Keeps scans through a dropped connection or an expired session: they are queued in the tab (`sessionStorage`) and sent when the connection is back or after signing in again in the same tab.
+- Scans are sent one at a time, in the order they were read; one read while the previous is in flight waits its turn.
+- Keeps scans through a dropped connection or an expired session: a scan whose request fails (or made while the device is offline) is queued in the tab (`sessionStorage`) and resent every few seconds, when the connection is back, or after signing in again in the same tab.
 - Explains why a code cannot be ordered - not found, out of stock (with "Notify me"), on backorder (added, with a warning), discontinued (with its replacement offered) - and lets the user report a code that was not found.
 - Logs every code that did not give an orderable product (**WooCommerce → Unresolved codes**), so missing barcodes can be fixed at the source.
 
@@ -91,15 +92,16 @@ When a replacement is returned, the scan answers "discontinued" and offers the r
 
 ## REST API
 
-Namespace `b2b/v1`, cookie-authenticated (`X-WP-Nonce`), every route behind the context check above. The panel treats any `401`/`403` as a lost session: it keeps the scan and offers to sign in.
+Namespace `b2b/v1`, cookie-authenticated (`X-WP-Nonce`), every route behind the context check above. On `401`, or `403 rest_cookie_invalid_nonce` (expired nonce), the panel keeps the scan and offers to sign in; any other `403` is shown as is. Codes are trimmed plain text up to 64 characters - SKUs with dots, slashes or spaces are kept as they are.
 
 | Route | Method | Parameters | Does |
 |---|---|---|---|
-| `/lookup` | GET | `code` (required), `add` (bool) | Finds the product for a code and says whether it can be ordered (`ok`, `backorder`, `out_of_stock`, `discontinued`; not found, `not_visible` and `not_purchasable` → `404`). Misses are logged here. With `add=1` an `ok`/`backorder` product is also added and the cart returned. |
+| `/lookup` | GET | `code` (required) | Finds the product for a code and says whether it can be ordered (`ok`, `backorder`, `out_of_stock`, `discontinued`; not found, `not_visible` and `not_purchasable` → `404`). Misses are logged here. Never changes the cart. |
+| `/lookup` | POST | `code` (required), `add` (bool) | The same; with `add=1` an `ok`/`backorder` product is also added and the cart returned. What the panel sends per scan. |
 | `/cart` | GET | — | The current cart lines and subtotal. |
-| `/cart` | POST | `product_id` (required), `delta` (default 1) or `set` | Changes a line's quantity (an increase is refused with `409` unless the product assesses `ok`); returns the cart. |
+| `/cart` | POST | `product_id` (required), `delta` (default 1) or `set` | Changes a line's quantity; returns the cart. Judged on the resulting quantity: any increase is refused with `409` unless the product assesses `ok`, and a line can always be reduced or removed. |
 | `/report` | POST | `code` (required) | Flags the user's latest log entry for that code (or records one) for the shop to look at. |
-| `/notify` | POST | `product_id` (required), `quantity` | Subscribes the user's account email to a back-in-stock alert (needs `beltoft-in-stock-notifier`, otherwise `503`). |
+| `/notify` | POST | `product_id` (required), `quantity` | Subscribes the user's account email to a back-in-stock alert (needs `beltoft-in-stock-notifier`, otherwise `503`). A product the catalog rules refuse this user gets the same `400` as one that does not exist. |
 
 ## Translations
 
