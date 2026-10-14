@@ -67,6 +67,8 @@ class Assets {
 			'restUrl'    => esc_url_raw( rest_url( Routes::NAMESPACE_V1 ) ),
 			'nonce'      => wp_create_nonce( 'wp_rest' ),
 			'loginUrl'   => esc_url_raw( wc_get_page_permalink( 'myaccount' ) ),
+			// WooCommerce's own endpoint URL, so a site in a subdirectory works.
+			'fragmentsUrl' => esc_url_raw( \WC_AJAX::get_endpoint( 'get_refreshed_fragments' ) ),
 			'breakpoint' => Breakpoints::mobile_max_width(),
 			/*
 			 * The ZXing build is served from this plugin. It is only fetched

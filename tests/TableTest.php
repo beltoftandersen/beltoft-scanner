@@ -66,8 +66,9 @@ class TableTest extends WP_UnitTestCase {
 
 		$old = $wpdb->prefix . 'b2b_scan_misses';
 		$wpdb->query( "DROP TABLE IF EXISTS `{$old}`" );
-		$wpdb->query( "CREATE TABLE `{$old}` ( id bigint(20) unsigned NOT NULL AUTO_INCREMENT, code varchar(64) NOT NULL DEFAULT '', PRIMARY KEY (id) )" );
-		$wpdb->insert( $old, array( 'code' => $code ) );
+		$wpdb->query( "CREATE TABLE `{$old}` LIKE `" . Table::name() . '`' );
+		$wpdb->query( "DELETE FROM `{$old}`" );
+		$wpdb->insert( $old, array( 'code' => $code, 'reason' => 'not_found', 'created_at' => '2026-10-13 00:00:00' ) );
 		delete_option( 'beltoft_scanner_db_version' );
 
 		return $old;
@@ -87,7 +88,8 @@ class TableTest extends WP_UnitTestCase {
 		$this->assertSame( 'OLD-MISS', $wpdb->get_var( "SELECT code FROM `{$new}` LIMIT 1" ) );
 	}
 
-	public function test_a_new_table_with_rows_is_never_replaced() {
+	/** Both tables hold rows: the old log is merged in, not left orphaned. */
+	public function test_an_old_log_is_merged_into_a_new_table_with_rows() {
 		global $wpdb;
 
 		$this->real_tables();
@@ -98,8 +100,12 @@ class TableTest extends WP_UnitTestCase {
 
 		Table::maybe_install();
 
-		$this->assertSame( array( 'NEW-MISS' ), $wpdb->get_col( "SELECT code FROM `{$new}`" ) );
-		$wpdb->query( "DROP TABLE IF EXISTS `{$old}`" );
+		$codes = $wpdb->get_col( "SELECT code FROM `{$new}` ORDER BY code" );
+		$this->assertSame( array( 'NEW-MISS', 'OLD-MISS' ), $codes );
+
+		$wpdb->suppress_errors( true );
+		$this->assertFalse( $wpdb->query( "SELECT 1 FROM `{$old}` LIMIT 0" ) );
+		$wpdb->suppress_errors( false );
 		$wpdb->query( "DELETE FROM `{$new}`" );
 	}
 }

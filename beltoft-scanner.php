@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Beltoft Scanner
  * Description: Scan product barcodes with the phone camera into the WooCommerce cart, on the pages other plugins register it for.
- * Version:     2.0.0
+ * Version:     2.0.1
  * Author:      beltoft.net
  * Text Domain: beltoft-scanner
  * Domain Path: /languages
@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
 define( 'BELTOFT_SCANNER_FILE', __FILE__ );
 define( 'BELTOFT_SCANNER_DIR', plugin_dir_path( __FILE__ ) );
 define( 'BELTOFT_SCANNER_URL', plugin_dir_url( __FILE__ ) );
-define( 'BELTOFT_SCANNER_VERSION', '2.0.0' );
+define( 'BELTOFT_SCANNER_VERSION', '2.0.1' );
 
 /**
  * PSR-4 for this plugin only, matching the beltoft-* plugins: no Composer at

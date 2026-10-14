@@ -78,16 +78,19 @@ class Table {
 			) {$collate};"
 		);
 
-		update_option( self::VERSION_OPTION, self::VERSION, true );
+		// Only once the table is really there, so a failed install is retried.
+		if ( self::exists( $table ) ) {
+			update_option( self::VERSION_OPTION, self::VERSION, true );
+		}
 	}
 
 	/**
-	 * Carry the log over from the old table name: renamed rather than copied,
-	 * so nothing is lost and nothing is left behind.
+	 * Carry the log over from the old table name.
 	 *
-	 * Also when the new table exists but is empty - a request that arrived
-	 * mid-upgrade can create it before this runs. A new table holding rows is
-	 * never touched, so a second run cannot clobber it.
+	 * Renamed when the new table does not exist yet. When it does - a request
+	 * that arrived mid-upgrade can create it first - the old rows are copied
+	 * in and the old table dropped only once the copy succeeded. Either way
+	 * nothing is lost, and a failure leaves the old table for the next try.
 	 */
 	private static function adopt_legacy(): void {
 		global $wpdb;
@@ -96,16 +99,21 @@ class Table {
 		$table  = self::name();
 
 		if ( self::exists( $legacy ) ) {
-			if ( self::exists( $table ) && ! $wpdb->get_var( "SELECT 1 FROM `{$table}` LIMIT 1" ) ) {
-				$wpdb->query( "DROP TABLE `{$table}`" );
-			}
-
 			if ( ! self::exists( $table ) ) {
 				$wpdb->query( "ALTER TABLE `{$legacy}` RENAME TO `{$table}`" );
+			} else {
+				$columns = 'code, reason, product_id, user_id, reported, created_at';
+				$copied  = $wpdb->query( "INSERT INTO `{$table}` ({$columns}) SELECT {$columns} FROM `{$legacy}` ORDER BY id" );
+
+				if ( false !== $copied ) {
+					$wpdb->query( "DROP TABLE `{$legacy}`" );
+				}
 			}
 		}
 
-		delete_option( self::LEGACY_OPTION );
+		if ( ! self::exists( $legacy ) ) {
+			delete_option( self::LEGACY_OPTION );
+		}
 	}
 
 	/**

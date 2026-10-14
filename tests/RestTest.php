@@ -109,7 +109,8 @@ class RestTest extends WP_UnitTestCase {
 
 		$response = $this->call( 'POST', '/cart', array( 'product_id' => $hidden->get_id(), 'delta' => 0, 'set' => 5 ) );
 
-		$this->assertSame( 409, $response->get_status() );
+		// 400 like a missing product, not 409, which would say it exists.
+		$this->assertSame( 400, $response->get_status() );
 		$this->assertSame( 0, $this->in_cart( $hidden ) );
 	}
 
@@ -219,5 +220,63 @@ class RestTest extends WP_UnitTestCase {
 
 		$this->assertSame( 500, $response->get_status() );
 		$this->assertSame( 'nope', $response->get_data()['code'] );
+	}
+
+	/* ------------------------------------------------- what /cart reveals */
+
+	public function test_cart_answers_a_hidden_product_like_one_that_does_not_exist() {
+		$hidden = $this->product();
+		$this->hide( $hidden );
+
+		$hidden_reply  = $this->call( 'POST', '/cart', array( 'product_id' => $hidden->get_id(), 'delta' => 0 ) );
+		$missing_reply = $this->call( 'POST', '/cart', array( 'product_id' => 999999, 'delta' => 0 ) );
+
+		$this->assertSame( 400, $hidden_reply->get_status() );
+		$this->assertSame( $missing_reply->get_data()['code'], $hidden_reply->get_data()['code'] );
+		$this->assertStringNotContainsString( $hidden->get_name(), wp_json_encode( $hidden_reply->get_data() ) );
+	}
+
+	public function test_cart_answers_a_draft_like_one_that_does_not_exist() {
+		$draft = $this->product();
+		$draft->set_status( 'draft' );
+		$draft->save();
+
+		$response = $this->call( 'POST', '/cart', array( 'product_id' => $draft->get_id(), 'set' => 0 ) );
+
+		$this->assertSame( 400, $response->get_status() );
+	}
+
+	/* --------------------------------------------- a scan sent twice */
+
+	public function test_a_scan_sent_again_with_its_id_adds_only_once() {
+		$product = $this->product( 'TWICE' );
+
+		$this->call( 'POST', '/lookup', array( 'code' => 'TWICE', 'add' => true, 'scan_id' => 'scan-abc-1' ) );
+		$again = $this->call( 'POST', '/lookup', array( 'code' => 'TWICE', 'add' => true, 'scan_id' => 'scan-abc-1' ) );
+
+		$this->assertSame( 200, $again->get_status() );
+		$this->assertSame( 1, $this->in_cart( $product ) );
+		$this->assertSame( 1, $again->get_data()['quantity'] );
+		$this->assertArrayHasKey( 'lines', $again->get_data() );
+	}
+
+	public function test_two_scans_of_the_same_box_add_two() {
+		$product = $this->product( 'TWO' );
+
+		$this->call( 'POST', '/lookup', array( 'code' => 'TWO', 'add' => true, 'scan_id' => 'scan-1' ) );
+		$this->call( 'POST', '/lookup', array( 'code' => 'TWO', 'add' => true, 'scan_id' => 'scan-2' ) );
+
+		$this->assertSame( 2, $this->in_cart( $product ) );
+	}
+
+	public function test_a_scan_id_is_remembered_per_user() {
+		$product = $this->product( 'MINE' );
+
+		$this->call( 'POST', '/lookup', array( 'code' => 'MINE', 'add' => true, 'scan_id' => 'same-id' ) );
+		WC()->cart->empty_cart();
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'customer' ) ) );
+		$this->call( 'POST', '/lookup', array( 'code' => 'MINE', 'add' => true, 'scan_id' => 'same-id' ) );
+
+		$this->assertSame( 1, $this->in_cart( $product ) );
 	}
 }

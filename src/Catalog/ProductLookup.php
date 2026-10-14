@@ -138,6 +138,23 @@ class ProductLookup {
 		return array( 'status' => self::sellable( $product ), 'replacement' => null );
 	}
 
+	/**
+	 * Whether this user may know the product exists at all: it is published
+	 * (or private, as the GTIN lookup allows) and the catalog rules do not
+	 * refuse it. Anything else is answered like a product that does not exist.
+	 */
+	public static function visible_to( WC_Product $product, int $user_id ): bool {
+		$statuses = array( 'publish', 'private' );
+		$parent   = $product->get_parent_id() ? wc_get_product( $product->get_parent_id() ) : null;
+
+		if ( ! in_array( $product->get_status(), $statuses, true )
+			|| ( $parent && ! in_array( $parent->get_status(), $statuses, true ) ) ) {
+			return false;
+		}
+
+		return null === self::refused_by_rules( $product, $user_id );
+	}
+
 	/** The consumers' catalog rules: null, or the refusal they returned. */
 	private static function refused_by_rules( WC_Product $product, int $user_id ): ?string {
 		$refused = apply_filters( self::ASSESS_FILTER, null, $product, $user_id );

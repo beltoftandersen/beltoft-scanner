@@ -11,7 +11,7 @@ The scanner is a **core that other plugins plug into**. On its own it shows nowh
 - Looks the code up by GTIN (`_global_unique_id`, variations first), then by SKU.
 - Adds to the WooCommerce cart in one call per scan. The panel shows the whole order, newest first, with −/+, a typed quantity and remove on each line, the subtotal and a link to checkout. Quantities are capped at the stock when backorders are not allowed. The page's cart fragments are refreshed after each change.
 - Scans are sent one at a time, in the order they were read; one read while the previous is in flight waits its turn.
-- Keeps scans through a dropped connection or an expired session: a scan whose request fails (or made while the device is offline) is queued in the tab (`sessionStorage`) and resent every few seconds, when the connection is back, or after signing in again in the same tab.
+- Keeps scans through a dropped connection or an expired session: a scan whose request fails (or made while the device is offline) is queued in the tab (`sessionStorage`) and resent every few seconds, when the connection is back, or after signing in again in the same tab. Each scan carries an id, so one the server had already applied is not added twice.
 - Explains why a code cannot be ordered - not found, out of stock (with "Notify me" when a plugin handles it), on backorder (added, with a warning), discontinued (with its replacement offered) - and lets the user report a code that was not found.
 - Logs every code that did not give an orderable product (**WooCommerce → Unresolved codes**), so missing barcodes can be fixed at the source.
 
@@ -119,9 +119,9 @@ Namespace `beltoft-scanner/v1`, cookie-authenticated (`X-WP-Nonce`), every route
 | Route | Method | Parameters | Does |
 |---|---|---|---|
 | `/lookup` | GET | `code` (required) | Finds the product for a code and says whether it can be ordered (`ok`, `backorder`, `out_of_stock`, `discontinued`; not found, `not_visible` and `not_purchasable` → `404`). Misses are logged here. Never changes the cart. |
-| `/lookup` | POST | `code` (required), `add` (bool) | The same; with `add=1` an `ok`/`backorder` product is also added and the cart returned. What the panel sends per scan. |
+| `/lookup` | POST | `code` (required), `add` (bool), `scan_id` | The same; with `add=1` an `ok`/`backorder` product is also added and the cart returned. What the panel sends per scan. A `scan_id` already applied for this user (kept a day) adds nothing and returns the order as it stands, so a resent scan is not counted twice. |
 | `/cart` | GET | — | The current cart lines and subtotal. |
-| `/cart` | POST | `product_id` (required), `delta` (default 1) or `set` | Changes a line's quantity; returns the cart. Judged on the resulting quantity: any increase is refused with `409` unless the product assesses `ok`, and a line can always be reduced or removed. |
+| `/cart` | POST | `product_id` (required), `delta` (default 1) or `set` | Changes a line's quantity; returns the cart. Judged on the resulting quantity: any increase is refused with `409` unless the product assesses `ok`, and a line can always be reduced or removed. A product not on the order that the user may not see (catalog rules, or not published) gets the same `400` as one that does not exist. |
 | `/report` | POST | `code` (required) | Flags the user's latest log entry for that code (or records one) for the shop to look at. |
 | `/notify` | POST | `product_id` (required), `quantity` | Hands a back-in-stock subscription for the user to the `beltoft_scanner_notify` handler; no handler → `503`. A product the catalog rules refuse this user gets the same `400` as one that does not exist. |
 
@@ -145,3 +145,4 @@ wp i18n make-php languages/beltoft-scanner-pt_PT.po
 - Code: `BeltoftScanner\` PSR-4 under `src/` with the plugin's own autoloader (no Composer at runtime). `src/Support/Context.php` asks the contexts, `src/Catalog/ProductLookup.php` finds and assesses products, `src/Rest/Routes.php` is the API, `src/Ui/` the button, panel and assets, `src/Log/` and `src/Admin/` the unresolved-codes log.
 - Tests: PHPUnit 9.6 with the WordPress test suite. `composer install`, then `WP_TESTS_DIR=/path/to/wordpress-tests-lib vendor/bin/phpunit` (default `/tmp/wordpress-tests-lib`) against a throwaway database. `tests/bootstrap.php` loads WooCommerce from `/var/www/staging.mindthetrash.pt/wp-content/plugins` - change `BELTOFT_SITE_PLUGINS` there to run it elsewhere. The suite loads **only WooCommerce and this plugin** — it must keep passing without any consumer plugin, which is what keeps the core independent of them.
 - The scanner never references a consuming plugin's classes; consumers only use the filters above.
+- Deleting the plugin (`uninstall.php`) drops the miss log and removes its option and the recent scan ids.

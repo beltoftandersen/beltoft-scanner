@@ -217,7 +217,7 @@
 	 * and re-renders its cart elements.
 	 */
 	function refreshCart() {
-		fetch( '/?wc-ajax=get_refreshed_fragments', { credentials: 'same-origin' } )
+		fetch( cfg.fragmentsUrl, { credentials: 'same-origin' } )
 			.then( function ( r ) { return r.json(); } )
 			.then( function ( data ) {
 				if ( ! data || ! data.fragments ) { return; }
@@ -421,17 +421,28 @@
 		state.lastCode = code;
 		state.lastSeen = now;
 
+		var id = scanId();
+
 		if ( ! navigator.onLine ) {
-			queueCode( code );
+			queueCode( code, false, id );
 			return;
 		}
 
-		lookup( code );
+		lookup( code, false, id );
+	}
+
+	/*
+	 * Names one physical scan, and travels with it through the queue. The
+	 * server adds a unit once per id, so a scan resent after a lost reply -
+	 * the unit already on the order - is not counted twice.
+	 */
+	function scanId() {
+		return Date.now().toString( 36 ) + '-' + Math.random().toString( 36 ).slice( 2, 12 );
 	}
 
 	/** `quiet` for a replayed scan going back: it was announced the first time. */
-	function queueCode( code, quiet ) {
-		state.queue.push( { code: code, at: Date.now() } );
+	function queueCode( code, quiet, id ) {
+		state.queue.push( { code: code, id: id || scanId(), at: Date.now() } );
 		writeQueue();
 		if ( ! quiet ) { toast( code + ' · ' + t.pending, null, 'pending' ); }
 	}
@@ -442,15 +453,15 @@
 	 * often read before the last reply is back, and a scan that vanished
 	 * without a beep or a message was a unit missing from the order.
 	 */
-	function lookup( code, replay ) {
+	function lookup( code, replay, id ) {
 		state.chain = state.chain
-			.then( function () { return send( code, replay ); } )
+			.then( function () { return send( code, replay, id ); } )
 			.catch( function () {} ); // One bad reply must not stop every scan after it.
 	}
 
-	function send( code, replay ) {
+	function send( code, replay, id ) {
 		// POST with add=1 resolves the code and puts the unit on the order in one call.
-		return api( '/lookup', { method: 'POST', body: { code: code, add: true } } )
+		return api( '/lookup', { method: 'POST', body: { code: code, add: true, scan_id: id } } )
 			.then( function ( data ) {
 				if ( 'out_of_stock' === data.status ) {
 					outOfStock( data.product );
@@ -464,7 +475,7 @@
 
 				applied( data.product, data, 'backorder' === data.status );
 			} )
-			.catch( function ( err ) { failed( code, err, replay ); } );
+			.catch( function ( err ) { failed( code, err, replay, id ); } );
 	}
 
 	/** Used when the partner accepts a replacement, which needs its own add. */
@@ -559,10 +570,10 @@
 		} ], 'error' );
 	}
 
-	function failed( code, err, replay ) {
+	function failed( code, err, replay, id ) {
 		if ( sessionLost( err ) ) {
 			// Keep what has not been applied yet, then send them to sign in.
-			queueCode( code, replay );
+			queueCode( code, replay, id );
 			askToSignIn();
 			return;
 		}
@@ -573,7 +584,7 @@
 		 * itself the sign: keep the code and try again shortly.
 		 */
 		if ( isNetworkError( err ) ) {
-			queueCode( code, replay );
+			queueCode( code, replay, id );
 			retrySoon();
 			return;
 		}
@@ -610,7 +621,7 @@
 		// A timed retry stays silent; coming back online or signed in is news.
 		if ( true !== retry ) { toast( t.restored, null, 'ok' ); }
 
-		pending.forEach( function ( item ) { lookup( item.code, true ); } );
+		pending.forEach( function ( item ) { lookup( item.code, true, item.id || scanId() ); } );
 	}
 
 	/* ------------------------------------------------------------- decoding */
@@ -674,11 +685,19 @@
 		if ( ! caps || ! caps.torch ) { return; }
 
 		el.torch.hidden = false;
-		el.torch.addEventListener( 'click', function () {
-			state.torchOn = ! state.torchOn;
-			state.track.applyConstraints( { advanced: [ { torch: state.torchOn } ] } ).catch( function () {} );
-			el.torch.classList.toggle( 'is-on', state.torchOn );
-		} );
+	}
+
+	/*
+	 * Bound once, in init(). setUpTorch() runs on every camera start, and a
+	 * listener added there each time stacked up: after a reopen one tap
+	 * toggled the light twice and it stayed off.
+	 */
+	function toggleTorch() {
+		if ( ! state.track ) { return; }
+
+		state.torchOn = ! state.torchOn;
+		state.track.applyConstraints( { advanced: [ { torch: state.torchOn } ] } ).catch( function () {} );
+		el.torch.classList.toggle( 'is-on', state.torchOn );
 	}
 
 	function keepAwake() {
@@ -838,6 +857,7 @@
 		} );
 
 		$( 'bscan-close' ).addEventListener( 'click', close );
+		el.torch.addEventListener( 'click', toggleTorch );
 
 		document.addEventListener( 'keydown', function ( e ) {
 			if ( 'Escape' === e.key && state.open ) { close(); }

@@ -67,6 +67,16 @@ class Routes {
 					'type'     => 'boolean',
 					'default'  => false,
 				),
+				/*
+				 * Names one physical scan, so sending it again cannot add a
+				 * second unit. A reply lost on bad Wi-Fi after the server had
+				 * already added the unit used to be retried as a new scan.
+				 */
+				'scan_id' => array(
+					'required'          => false,
+					'type'              => 'string',
+					'sanitize_callback' => array( __CLASS__, 'clean_scan_id' ),
+				),
 			),
 		) );
 
@@ -136,6 +146,10 @@ class Routes {
 		return trim( mb_substr( sanitize_text_field( (string) $value ), 0, 64 ) );
 	}
 
+	public static function clean_scan_id( $value ): string {
+		return substr( preg_replace( '/[^A-Za-z0-9_-]/', '', (string) $value ), 0, 64 );
+	}
+
 	public static function may_scan() {
 		if ( ! is_user_logged_in() ) {
 			return new WP_Error( 'beltoft_scanner_auth', __( 'Sign in to continue.', 'beltoft-scanner' ), array( 'status' => 401 ) );
@@ -202,10 +216,25 @@ class Routes {
 		}
 
 		if ( 'POST' === $request->get_method() && $request->get_param( 'add' ) && in_array( $payload['status'], array( ProductLookup::OK, 'backorder' ), true ) ) {
+			$scan_id = (string) $request->get_param( 'scan_id' );
+
+			if ( '' !== $scan_id && self::scan_seen( $user_id, $scan_id ) ) {
+				// Already applied: answer with the order as it stands, add nothing.
+				if ( ! self::ready_cart() ) {
+					return new WP_Error( 'beltoft_scanner_no_cart', __( 'Cart unavailable.', 'beltoft-scanner' ), array( 'status' => 500 ) );
+				}
+
+				return new WP_REST_Response( array_merge( $payload, self::cart_state(), self::line_state( $product ) ), 200 );
+			}
+
 			$added = self::apply_delta( $product, 1, null );
 
 			if ( is_wp_error( $added ) ) {
 				return $added;
+			}
+
+			if ( '' !== $scan_id ) {
+				self::remember_scan( $user_id, $scan_id );
 			}
 
 			// The order itself, not just what changed - that is the whole point
@@ -229,7 +258,13 @@ class Routes {
 		$set        = $request->get_param( 'set' );
 		$product    = wc_get_product( $product_id );
 
-		if ( ! $product instanceof WC_Product ) {
+		/*
+		 * A product this user may not know about is answered exactly like one
+		 * that does not exist - the reply carries its name and stock. One
+		 * already on their order is theirs to reduce or remove regardless.
+		 */
+		if ( ! $product instanceof WC_Product
+			|| ( '' === self::line( $product )['key'] && ! ProductLookup::visible_to( $product, get_current_user_id() ) ) ) {
 			return new WP_Error( 'beltoft_scanner_bad_product', __( 'Invalid product.', 'beltoft-scanner' ), array( 'status' => 400 ) );
 		}
 
@@ -370,6 +405,40 @@ class Routes {
 		}
 
 		return array( 'key' => '', 'quantity' => 0 );
+	}
+
+	/** What apply_delta() reports, for a product whose line was not changed. */
+	private static function line_state( WC_Product $product ): array {
+		return array(
+			'product_id' => $product->get_id(),
+			'quantity'   => self::line( $product )['quantity'],
+			'stock'      => $product->managing_stock() ? (int) $product->get_stock_quantity() : null,
+			'capped'     => false,
+			'name'       => wp_strip_all_tags( $product->get_name() ),
+		);
+	}
+
+	/** Recent scan ids per user: enough for any retry, gone within a day. */
+	private const SCANS_KEEP = 200;
+
+	private static function scans_key( int $user_id ): string {
+		return 'beltoft_scanner_scans_' . $user_id;
+	}
+
+	private static function scan_seen( int $user_id, string $scan_id ): bool {
+		$seen = get_transient( self::scans_key( $user_id ) );
+
+		return is_array( $seen ) && isset( $seen[ $scan_id ] );
+	}
+
+	private static function remember_scan( int $user_id, string $scan_id ): void {
+		$seen = get_transient( self::scans_key( $user_id ) );
+		$seen = is_array( $seen ) ? $seen : array();
+
+		$seen[ $scan_id ] = time();
+		$seen             = array_slice( $seen, -self::SCANS_KEEP, null, true );
+
+		set_transient( self::scans_key( $user_id ), $seen, DAY_IN_SECONDS );
 	}
 
 	/**
