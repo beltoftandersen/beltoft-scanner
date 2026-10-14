@@ -2,14 +2,14 @@
 # This file is distributed under the same license as the Beltoft Scanner plugin.
 msgid ""
 msgstr ""
-"Project-Id-Version: Beltoft Scanner 1.0.5\n"
+"Project-Id-Version: Beltoft Scanner 1.0.7\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/beltoft-scanner\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-10-14T08:36:01+00:00\n"
+"POT-Creation-Date: 2026-10-14T09:25:49+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: beltoft-scanner\n"
@@ -36,7 +36,7 @@ msgid "Unresolved codes"
 msgstr ""
 
 #: src/Admin/MissesPage.php:43
-msgid "Scanned codes that did not match a product. Fix them in Odoo."
+msgid "Scanned codes that did not give an orderable product. Most are fixed on the product itself: its SKU or GTIN."
 msgstr ""
 
 #: src/Admin/MissesPage.php:46
@@ -84,7 +84,7 @@ msgid "Outside this account's catalogue"
 msgstr ""
 
 #: src/Admin/MissesPage.php:82
-#: src/Ui/Assets.php:74
+#: src/Ui/Assets.php:91
 msgid "Out of stock"
 msgstr ""
 
@@ -92,174 +92,174 @@ msgstr ""
 msgid "Discontinued"
 msgstr ""
 
-#: src/Rest/Routes.php:134
+#: src/Rest/Routes.php:141
 msgid "Sign in to continue."
 msgstr ""
 
-#: src/Rest/Routes.php:138
+#: src/Rest/Routes.php:145
 msgid "Your account does not have access to the scanner."
 msgstr ""
 
 #. translators: %s: the scanned barcode.
-#: src/Rest/Routes.php:155
-#: src/Rest/Routes.php:175
-#: src/Ui/Assets.php:73
+#: src/Rest/Routes.php:162
+#: src/Rest/Routes.php:182
+#: src/Ui/Assets.php:90
 #, php-format
 msgid "Code not found: %s"
 msgstr ""
 
-#: src/Rest/Routes.php:225
-#: src/Rest/Routes.php:441
+#: src/Rest/Routes.php:233
+#: src/Rest/Routes.php:484
 msgid "Invalid product."
 msgstr ""
 
-#: src/Rest/Routes.php:233
-msgid "This product cannot be added."
-msgstr ""
-
-#: src/Rest/Routes.php:246
-#: src/Rest/Routes.php:271
-#: src/Rest/Routes.php:404
+#: src/Rest/Routes.php:244
+#: src/Rest/Routes.php:291
+#: src/Rest/Routes.php:437
 msgid "Cart unavailable."
 msgstr ""
 
-#: src/Rest/Routes.php:327
+#: src/Rest/Routes.php:263
+msgid "This product cannot be added."
+msgstr ""
+
+#: src/Rest/Routes.php:328
 msgid "This product could not be added."
 msgstr ""
 
-#: src/Rest/Routes.php:422
+#: src/Rest/Routes.php:455
 msgid "Thank you. We will check this code."
 msgstr ""
 
-#: src/Rest/Routes.php:447
+#: src/Rest/Routes.php:502
 msgid "Back-in-stock alerts are not available at the moment."
 msgstr ""
 
-#: src/Rest/Routes.php:469
+#: src/Rest/Routes.php:512
 msgid "You are already being notified about this product."
 msgstr ""
 
-#: src/Rest/Routes.php:470
+#: src/Rest/Routes.php:513
 msgid "We will let you know as soon as it is back in stock."
 msgstr ""
 
-#: src/Ui/Assets.php:63
+#: src/Ui/Assets.php:80
 #: src/Ui/element-scan-button.php:20
 #: src/Ui/panel.php:16
 msgid "Scan barcode"
 msgstr ""
 
-#: src/Ui/Assets.php:64
+#: src/Ui/Assets.php:81
 #: src/Ui/panel.php:28
 msgid "Close"
 msgstr ""
 
-#: src/Ui/Assets.php:65
+#: src/Ui/Assets.php:82
 #: src/Ui/panel.php:25
 msgid "Light"
 msgstr ""
 
-#: src/Ui/Assets.php:66
+#: src/Ui/Assets.php:83
 #: src/Ui/panel.php:37
 msgid "Enter code"
 msgstr ""
 
-#: src/Ui/Assets.php:67
+#: src/Ui/Assets.php:84
 #: src/Ui/panel.php:41
 msgid "EAN or SKU"
 msgstr ""
 
-#: src/Ui/Assets.php:68
+#: src/Ui/Assets.php:85
 #: src/Ui/panel.php:42
 msgid "Add"
 msgstr ""
 
-#: src/Ui/Assets.php:69
+#: src/Ui/Assets.php:86
 msgid "Undo"
 msgstr ""
 
-#: src/Ui/Assets.php:70
+#: src/Ui/Assets.php:87
 msgid "Report"
 msgstr ""
 
-#: src/Ui/Assets.php:71
+#: src/Ui/Assets.php:88
 msgid "Notify me"
 msgstr ""
 
-#: src/Ui/Assets.php:75
+#: src/Ui/Assets.php:92
 msgid "pending"
 msgstr ""
 
-#: src/Ui/Assets.php:76
+#: src/Ui/Assets.php:93
 msgid "No connection. Your codes are saved."
 msgstr ""
 
-#: src/Ui/Assets.php:77
+#: src/Ui/Assets.php:94
 msgid "We could not access the camera. Allow access in your browser settings or enter the code manually."
 msgstr ""
 
-#: src/Ui/Assets.php:78
+#: src/Ui/Assets.php:95
 msgid "This device has no camera available. Enter the code manually."
 msgstr ""
 
-#: src/Ui/Assets.php:79
+#: src/Ui/Assets.php:96
 msgid "The camera does not work inside this app. Open the page in Safari or Chrome."
 msgstr ""
 
-#: src/Ui/Assets.php:80
+#: src/Ui/Assets.php:97
 msgid "Open in browser"
 msgstr ""
 
-#: src/Ui/Assets.php:81
+#: src/Ui/Assets.php:98
 msgid "Your session has expired. Sign in again to continue — your scans are saved."
 msgstr ""
 
-#: src/Ui/Assets.php:82
+#: src/Ui/Assets.php:99
 msgid "Sign in"
 msgstr ""
 
-#: src/Ui/Assets.php:83
+#: src/Ui/Assets.php:100
 msgid "We recovered your pending scans."
 msgstr ""
 
-#: src/Ui/Assets.php:84
+#: src/Ui/Assets.php:101
 #, php-format
 msgid "Available: %s"
 msgstr ""
 
-#: src/Ui/Assets.php:85
+#: src/Ui/Assets.php:102
 #, php-format
 msgid "%1$s · %2$s in the order"
 msgstr ""
 
-#: src/Ui/Assets.php:86
+#: src/Ui/Assets.php:103
 msgid "Starting the camera…"
 msgstr ""
 
-#: src/Ui/Assets.php:87
+#: src/Ui/Assets.php:104
 #, php-format
 msgid "%s item"
 msgstr ""
 
 #. translators: %s: number of items on the order.
-#: src/Ui/Assets.php:89
+#: src/Ui/Assets.php:106
 #, php-format
 msgid "%s items"
 msgstr ""
 
-#: src/Ui/Assets.php:90
+#: src/Ui/Assets.php:107
 msgid "Increase quantity"
 msgstr ""
 
-#: src/Ui/Assets.php:91
+#: src/Ui/Assets.php:108
 msgid "Decrease quantity"
 msgstr ""
 
-#: src/Ui/Assets.php:92
+#: src/Ui/Assets.php:109
 msgid "Quantity"
 msgstr ""
 
-#: src/Ui/Assets.php:93
+#: src/Ui/Assets.php:110
 msgid "Remove"
 msgstr ""
 
@@ -270,12 +270,12 @@ msgstr ""
 #: src/Ui/element-scan-button.php:28
 #: src/Ui/element-scan-button.php:29
 #: src/Ui/element-scan-button.php:58
-#: src/Ui/Shortcode.php:36
+#: src/Ui/Shortcode.php:35
 msgid "Scan code"
 msgstr ""
 
 #: src/Ui/element-scan-button.php:43
-msgid "Visible only on pages where a plugin turns the scanner on (B2B ordering, POS), to users allowed to scan, and on small screens. Use Bricks conditions to restrict it further."
+msgid "Visible only on pages where another plugin turns the scanner on, to users it allows to scan, and on small screens. Use Bricks conditions to restrict it further."
 msgstr ""
 
 #: src/Ui/element-scan-button.php:48

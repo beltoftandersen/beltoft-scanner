@@ -1,10 +1,10 @@
 <?php
 
-namespace B2BScanner\Rest;
+namespace BeltoftScanner\Rest;
 
-use B2BScanner\Catalog\ProductLookup;
-use B2BScanner\Log\Repository as Log;
-use B2BScanner\Support\Context;
+use BeltoftScanner\Catalog\ProductLookup;
+use BeltoftScanner\Log\Repository as Log;
+use BeltoftScanner\Support\Context;
 use WC_Product;
 use WP_Error;
 use WP_REST_Request;
@@ -30,7 +30,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Routes {
 
-	public const NAMESPACE_V1 = 'b2b/v1';
+	public const NAMESPACE_V1 = 'beltoft-scanner/v1';
 
 	public static function register(): void {
 		add_action( 'rest_api_init', array( __CLASS__, 'routes' ) );
@@ -138,11 +138,11 @@ class Routes {
 
 	public static function may_scan() {
 		if ( ! is_user_logged_in() ) {
-			return new WP_Error( 'b2b_scanner_auth', __( 'Sign in to continue.', 'beltoft-scanner' ), array( 'status' => 401 ) );
+			return new WP_Error( 'beltoft_scanner_auth', __( 'Sign in to continue.', 'beltoft-scanner' ), array( 'status' => 401 ) );
 		}
 
 		if ( ! Context::user_may_scan() ) {
-			return new WP_Error( 'b2b_scanner_forbidden', __( 'Your account does not have access to the scanner.', 'beltoft-scanner' ), array( 'status' => 403 ) );
+			return new WP_Error( 'beltoft_scanner_forbidden', __( 'Your account does not have access to the scanner.', 'beltoft-scanner' ), array( 'status' => 403 ) );
 		}
 
 		return true;
@@ -157,7 +157,7 @@ class Routes {
 			Log::record( $code, Log::NOT_FOUND, $user_id );
 
 			return new WP_Error(
-				'b2b_scanner_not_found',
+				'beltoft_scanner_not_found',
 				/* translators: %s: the scanned barcode. */
 				sprintf( __( 'Code not found: %s', 'beltoft-scanner' ), $code ),
 				array( 'status' => 404, 'reason' => Log::NOT_FOUND, 'code_scanned' => $code )
@@ -178,7 +178,7 @@ class Routes {
 			 * and the two are told apart in the log, where it matters.
 			 */
 			return new WP_Error(
-				'b2b_scanner_not_found',
+				'beltoft_scanner_not_found',
 				sprintf( __( 'Code not found: %s', 'beltoft-scanner' ), $code ),
 				array( 'status' => 404, 'reason' => $status, 'code_scanned' => $code )
 			);
@@ -230,7 +230,7 @@ class Routes {
 		$product    = wc_get_product( $product_id );
 
 		if ( ! $product instanceof WC_Product ) {
-			return new WP_Error( 'b2b_scanner_bad_product', __( 'Invalid product.', 'beltoft-scanner' ), array( 'status' => 400 ) );
+			return new WP_Error( 'beltoft_scanner_bad_product', __( 'Invalid product.', 'beltoft-scanner' ), array( 'status' => 400 ) );
 		}
 
 		/*
@@ -241,7 +241,7 @@ class Routes {
 		 * 500 while the lookup beside it worked fine.
 		 */
 		if ( ! self::ready_cart() ) {
-			return new WP_Error( 'b2b_scanner_no_cart', __( 'Cart unavailable.', 'beltoft-scanner' ), array( 'status' => 500 ) );
+			return new WP_Error( 'beltoft_scanner_no_cart', __( 'Cart unavailable.', 'beltoft-scanner' ), array( 'status' => 500 ) );
 		}
 
 		/*
@@ -259,7 +259,7 @@ class Routes {
 
 			if ( ProductLookup::OK !== $verdict['status'] ) {
 				return new WP_Error(
-					'b2b_scanner_not_orderable',
+					'beltoft_scanner_not_orderable',
 					__( 'This product cannot be added.', 'beltoft-scanner' ),
 					array( 'status' => 409, 'reason' => $verdict['status'] )
 				);
@@ -288,7 +288,7 @@ class Routes {
 	 */
 	private static function apply_delta( WC_Product $product, int $delta, $set ) {
 		if ( ! self::ready_cart() ) {
-			return new WP_Error( 'b2b_scanner_no_cart', __( 'Cart unavailable.', 'beltoft-scanner' ), array( 'status' => 500 ) );
+			return new WP_Error( 'beltoft_scanner_no_cart', __( 'Cart unavailable.', 'beltoft-scanner' ), array( 'status' => 500 ) );
 		}
 
 		$parent_id    = $product->get_parent_id();
@@ -324,7 +324,7 @@ class Routes {
 				wc_clear_notices();
 
 				return new WP_Error(
-					'b2b_scanner_add_failed',
+					'beltoft_scanner_add_failed',
 					$notices ? wp_strip_all_tags( $notices[0]['notice'] ?? '' ) : __( 'This product could not be added.', 'beltoft-scanner' ),
 					array( 'status' => 409 )
 				);
@@ -434,7 +434,7 @@ class Routes {
 	 */
 	public static function cart_contents() {
 		if ( ! self::ready_cart() ) {
-			return new WP_Error( 'b2b_scanner_no_cart', __( 'Cart unavailable.', 'beltoft-scanner' ), array( 'status' => 500 ) );
+			return new WP_Error( 'beltoft_scanner_no_cart', __( 'Cart unavailable.', 'beltoft-scanner' ), array( 'status' => 500 ) );
 		}
 
 		return new WP_REST_Response( self::cart_state(), 200 );
@@ -457,18 +457,21 @@ class Routes {
 		);
 	}
 
+	/** Filter through which a plugin that keeps back-in-stock alerts takes a subscription. */
+	public const NOTIFY_FILTER = 'beltoft_scanner_notify';
+
 	/**
-	 * "Notificar-me" on an out-of-stock scan.
+	 * "Notify me" on an out-of-stock scan.
 	 *
-	 * Handed to beltoft-in-stock-notifier rather than stored here: it already
-	 * owns back-in-stock subscriptions, the email that goes out when stock
-	 * returns, the unsubscribe token and the admin screen. A second store would
-	 * mean a partner subscribing twice and being told once.
+	 * The scanner keeps no subscriptions of its own: whichever plugin owns
+	 * back-in-stock alerts - the emails, the unsubscribe links, the admin
+	 * screen - takes them through NOTIFY_FILTER, returning 'subscribed',
+	 * 'already' or a WP_Error. Nothing answering means the feature is off;
+	 * the panel then does not offer it at all (see Ui\Assets::data()).
 	 */
 	public static function notify( WP_REST_Request $request ) {
 		$product_id = (int) $request->get_param( 'product_id' );
 		$product    = wc_get_product( $product_id );
-		$user       = wp_get_current_user();
 
 		/*
 		 * A product the catalog rules refuse this user is answered exactly like
@@ -478,42 +481,34 @@ class Routes {
 		$verdict = $product instanceof WC_Product ? ProductLookup::assess( $product, get_current_user_id() ) : null;
 
 		if ( ! $verdict || in_array( $verdict['status'], array( Log::NOT_VISIBLE, Log::NOT_PURCHASABLE ), true ) ) {
-			return new WP_Error( 'b2b_scanner_bad_product', __( 'Invalid product.', 'beltoft-scanner' ), array( 'status' => 400 ) );
+			return new WP_Error( 'beltoft_scanner_bad_product', __( 'Invalid product.', 'beltoft-scanner' ), array( 'status' => 400 ) );
 		}
 
-		if ( ! class_exists( '\BeltoftInStockNotifier\Subscription\Repository' ) ) {
+		$result = apply_filters(
+			self::NOTIFY_FILTER,
+			null,
+			$product,
+			wp_get_current_user(),
+			max( 1, (int) $request->get_param( 'quantity' ) )
+		);
+
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		if ( ! in_array( $result, array( 'subscribed', 'already' ), true ) ) {
 			return new WP_Error(
-				'b2b_scanner_no_notifier',
+				'beltoft_scanner_no_notifier',
 				__( 'Back-in-stock alerts are not available at the moment.', 'beltoft-scanner' ),
 				array( 'status' => 503 )
-			);
-		}
-
-		$parent_id    = $product->get_parent_id();
-		$variation_id = $parent_id ? $product->get_id() : 0;
-
-		$id = \BeltoftInStockNotifier\Subscription\Repository::upsert( array(
-			'product_id'        => $parent_id ?: $product->get_id(),
-			'variation_id'      => $variation_id,
-			'email'             => $user->user_email,
-			'quantity'          => max( 1, (int) $request->get_param( 'quantity' ) ),
-			'gdpr_consent'      => 1,
-			'unsubscribe_token' => wp_generate_password( 32, false ),
-		) );
-
-		if ( false === $id ) {
-			return new WP_Error(
-				'b2b_scanner_notify_failed',
-				__( 'Back-in-stock alerts are not available at the moment.', 'beltoft-scanner' ),
-				array( 'status' => 500 )
 			);
 		}
 
 		return new WP_REST_Response(
 			array(
 				'subscribed' => true,
-				'already'    => 0 === $id,
-				'message'    => 0 === $id
+				'already'    => 'already' === $result,
+				'message'    => 'already' === $result
 					? __( 'You are already being notified about this product.', 'beltoft-scanner' )
 					: __( 'We will let you know as soon as it is back in stock.', 'beltoft-scanner' ),
 			),

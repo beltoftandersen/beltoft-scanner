@@ -1,6 +1,6 @@
 <?php
 
-use B2BScanner\Rest\Routes;
+use BeltoftScanner\Rest\Routes;
 
 /**
  * The endpoints, through the REST server: what may go into the cart, what
@@ -32,6 +32,7 @@ class RestTest extends WP_UnitTestCase {
 	public function tearDown(): void {
 		remove_all_filters( 'beltoft_scanner_contexts' );
 		remove_all_filters( 'beltoft_scanner_assess' );
+		remove_all_filters( 'beltoft_scanner_notify' );
 		WC()->cart->empty_cart();
 		wp_set_current_user( 0 );
 		parent::tearDown();
@@ -178,5 +179,45 @@ class RestTest extends WP_UnitTestCase {
 
 		$this->assertSame( $missing_reply->get_status(), $hidden_reply->get_status() );
 		$this->assertSame( $missing_reply->get_data()['code'], $hidden_reply->get_data()['code'] );
+	}
+
+	public function test_notify_without_a_handler_is_unavailable() {
+		$response = $this->call( 'POST', '/notify', array( 'product_id' => $this->product()->get_id() ) );
+
+		$this->assertSame( 503, $response->get_status() );
+	}
+
+	public function test_notify_hands_the_subscription_to_the_handler() {
+		$product = $this->product();
+		$seen    = null;
+
+		add_filter( 'beltoft_scanner_notify', function ( $result, $p, $user, $quantity ) use ( &$seen ) {
+			$seen = array( $p->get_id(), $user->ID, $quantity );
+
+			return 'subscribed';
+		}, 10, 4 );
+
+		$response = $this->call( 'POST', '/notify', array( 'product_id' => $product->get_id(), 'quantity' => 3 ) );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertFalse( $response->get_data()['already'] );
+		$this->assertSame( array( $product->get_id(), $this->user, 3 ), $seen );
+	}
+
+	public function test_notify_reports_an_existing_subscription() {
+		add_filter( 'beltoft_scanner_notify', fn() => 'already' );
+
+		$response = $this->call( 'POST', '/notify', array( 'product_id' => $this->product()->get_id() ) );
+
+		$this->assertTrue( $response->get_data()['already'] );
+	}
+
+	public function test_notify_passes_on_the_handlers_error() {
+		add_filter( 'beltoft_scanner_notify', fn() => new WP_Error( 'nope', 'Nope.', array( 'status' => 500 ) ) );
+
+		$response = $this->call( 'POST', '/notify', array( 'product_id' => $this->product()->get_id() ) );
+
+		$this->assertSame( 500, $response->get_status() );
+		$this->assertSame( 'nope', $response->get_data()['code'] );
 	}
 }

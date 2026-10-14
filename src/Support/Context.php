@@ -1,6 +1,6 @@
 <?php
 
-namespace B2BScanner\Support;
+namespace BeltoftScanner\Support;
 
 use WP_User;
 
@@ -10,11 +10,11 @@ defined( 'ABSPATH' ) || exit;
  * Who the scanner is for, and where it appears - asked of the plugins that
  * use it, never decided here.
  *
- * The scanner is a core other plugins plug into: the B2B loja registers its
- * ordering page and its approved partners, the till registers its own page and
- * operators. Each adds a context through `beltoft_scanner_contexts`:
+ * The scanner is a core other plugins plug into: each one that wants it adds
+ * a context - its pages, and the users it allows there - through
+ * `beltoft_scanner_contexts`:
  *
- *     $contexts['b2b-loja'] = array(
+ *     $contexts['my-ordering-page'] = array(
  *         'applies'  => callable(): bool,             // is this request one of my pages?
  *         'may_scan' => callable( WP_User ): bool,    // may this user scan here?
  *     );

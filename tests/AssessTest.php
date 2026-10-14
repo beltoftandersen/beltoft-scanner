@@ -1,6 +1,6 @@
 <?php
 
-use B2BScanner\Catalog\ProductLookup;
+use BeltoftScanner\Catalog\ProductLookup;
 
 /**
  * The core judges only what WooCommerce itself knows - purchasable, in stock.
@@ -25,7 +25,7 @@ class AssessTest extends WP_UnitTestCase {
 
 	public function tearDown(): void {
 		remove_all_filters( 'beltoft_scanner_assess' );
-		remove_all_filters( 'b2b_scanner_replacement_for' );
+		remove_all_filters( 'beltoft_scanner_replacement_for' );
 		parent::tearDown();
 	}
 
@@ -78,7 +78,7 @@ class AssessTest extends WP_UnitTestCase {
 	}
 
 	private function replaced_by( WC_Product $replacement ): void {
-		add_filter( 'b2b_scanner_replacement_for', fn() => $replacement->get_id() );
+		add_filter( 'beltoft_scanner_replacement_for', fn() => $replacement->get_id() );
 	}
 
 	private function another_product(): WC_Product {

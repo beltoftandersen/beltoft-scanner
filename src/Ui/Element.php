@@ -1,6 +1,6 @@
 <?php
 
-namespace B2BScanner\Ui;
+namespace BeltoftScanner\Ui;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -24,6 +24,6 @@ class Element {
 			return;
 		}
 
-		\Bricks\Elements::register_element( B2B_SCANNER_DIR . 'src/Ui/element-scan-button.php' );
+		\Bricks\Elements::register_element( BELTOFT_SCANNER_DIR . 'src/Ui/element-scan-button.php' );
 	}
 }

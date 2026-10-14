@@ -1,10 +1,10 @@
 <?php
 
-namespace B2BScanner\Ui;
+namespace BeltoftScanner\Ui;
 
-use B2BScanner\Rest\Routes;
-use B2BScanner\Support\Breakpoints;
-use B2BScanner\Support\Context;
+use BeltoftScanner\Rest\Routes;
+use BeltoftScanner\Support\Breakpoints;
+use BeltoftScanner\Support\Context;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -31,22 +31,22 @@ class Assets {
 
 		wp_enqueue_style(
 			self::HANDLE,
-			B2B_SCANNER_URL . 'assets/scanner.css',
+			BELTOFT_SCANNER_URL . 'assets/scanner.css',
 			array(),
-			B2B_SCANNER_VERSION
+			BELTOFT_SCANNER_VERSION
 		);
 
 		wp_add_inline_style( self::HANDLE, self::trigger_css() );
 
 		wp_enqueue_script(
 			self::HANDLE,
-			B2B_SCANNER_URL . 'assets/scanner.js',
+			BELTOFT_SCANNER_URL . 'assets/scanner.js',
 			array(),
-			B2B_SCANNER_VERSION,
+			BELTOFT_SCANNER_VERSION,
 			true
 		);
 
-		wp_localize_script( self::HANDLE, 'B2BScannerData', self::data() );
+		wp_localize_script( self::HANDLE, 'BeltoftScannerData', self::data() );
 	}
 
 	/**
@@ -57,7 +57,7 @@ class Assets {
 	 */
 	public static function trigger_css(): string {
 		return sprintf(
-			'@media (max-width: %dpx) { .b2bs-trigger { display: inline-flex; } }',
+			'@media (max-width: %dpx) { .bscan-trigger { display: inline-flex; } }',
 			Breakpoints::mobile_max_width()
 		);
 	}
@@ -73,7 +73,9 @@ class Assets {
 			 * when the browser has no BarcodeDetector of its own, which on
 			 * current Android Chrome it does - so most phones never download it.
 			 */
-			'zxingUrl'   => esc_url_raw( B2B_SCANNER_URL . 'assets/lib/zxing-browser.min.js' ),
+			'zxingUrl'   => esc_url_raw( BELTOFT_SCANNER_URL . 'assets/lib/zxing-browser.min.js' ),
+			// "Notify me" is only offered when a plugin takes the subscriptions.
+			'canNotify'  => has_filter( Routes::NOTIFY_FILTER ) !== false,
 			'i18n'       => array(
 				'title'         => __( 'Scan barcode', 'beltoft-scanner' ),
 				'close'         => __( 'Close', 'beltoft-scanner' ),
@@ -123,6 +125,6 @@ class Assets {
 			return;
 		}
 
-		include B2B_SCANNER_DIR . 'src/Ui/panel.php';
+		include BELTOFT_SCANNER_DIR . 'src/Ui/panel.php';
 	}
 }

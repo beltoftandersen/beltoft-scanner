@@ -1,6 +1,6 @@
 <?php
 
-namespace B2BScanner\Support;
+namespace BeltoftScanner\Support;
 
 defined( 'ABSPATH' ) || exit;
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace B2BScanner\Log;
+namespace BeltoftScanner\Log;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -11,19 +11,27 @@ defined( 'ABSPATH' ) || exit;
  * stockroom holding a product whose barcode this shop does not recognise is
  * the shop's problem, not theirs, and the only way it ever gets fixed is if
  * somebody can see the list. Every unusable scan lands here with the reason,
- * so the gaps can be corrected in Odoo instead of being rediscovered by the
+ * so the gaps can be corrected at the source instead of being rediscovered by the
  * next person holding the same box.
  */
 class Table {
 
-	private const VERSION_OPTION = 'b2b_scanner_db_version';
-	/** 2: same schema - bumped so existing installs re-save the option autoloaded. */
-	private const VERSION        = '2';
+	private const VERSION_OPTION = 'beltoft_scanner_db_version';
+
+	/** The names this table and its option had before the plugin was beltoft-scanner. */
+	private const LEGACY_TABLE  = 'b2b_scan_misses';
+	private const LEGACY_OPTION = 'b2b_scanner_db_version';
+	/**
+	 * 2: same schema - bumped so existing installs re-save the option autoloaded.
+	 * 3: same schema - rerun adopt_legacy() where a request created the new,
+	 *    empty table before the old one could be carried over.
+	 */
+	private const VERSION        = '3';
 
 	public static function name(): string {
 		global $wpdb;
 
-		return $wpdb->prefix . 'b2b_scan_misses';
+		return $wpdb->prefix . 'beltoft_scanner_misses';
 	}
 
 	/**
@@ -43,6 +51,8 @@ class Table {
 		global $wpdb;
 
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		self::adopt_legacy();
 
 		$table   = self::name();
 		$collate = $wpdb->get_charset_collate();
@@ -69,5 +79,46 @@ class Table {
 		);
 
 		update_option( self::VERSION_OPTION, self::VERSION, true );
+	}
+
+	/**
+	 * Carry the log over from the old table name: renamed rather than copied,
+	 * so nothing is lost and nothing is left behind.
+	 *
+	 * Also when the new table exists but is empty - a request that arrived
+	 * mid-upgrade can create it before this runs. A new table holding rows is
+	 * never touched, so a second run cannot clobber it.
+	 */
+	private static function adopt_legacy(): void {
+		global $wpdb;
+
+		$legacy = $wpdb->prefix . self::LEGACY_TABLE;
+		$table  = self::name();
+
+		if ( self::exists( $legacy ) ) {
+			if ( self::exists( $table ) && ! $wpdb->get_var( "SELECT 1 FROM `{$table}` LIMIT 1" ) ) {
+				$wpdb->query( "DROP TABLE `{$table}`" );
+			}
+
+			if ( ! self::exists( $table ) ) {
+				$wpdb->query( "ALTER TABLE `{$legacy}` RENAME TO `{$table}`" );
+			}
+		}
+
+		delete_option( self::LEGACY_OPTION );
+	}
+
+	/**
+	 * Asked by reading the table rather than through SHOW TABLES, which does
+	 * not list temporary tables - what the test suite creates.
+	 */
+	private static function exists( string $table ): bool {
+		global $wpdb;
+
+		$suppressed = $wpdb->suppress_errors( true );
+		$found      = false !== $wpdb->query( "SELECT 1 FROM `{$table}` LIMIT 0" );
+		$wpdb->suppress_errors( $suppressed );
+
+		return $found;
 	}
 }

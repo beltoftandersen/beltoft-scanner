@@ -8,7 +8,7 @@
 ( function () {
 	'use strict';
 
-	var cfg = window.B2BScannerData;
+	var cfg = window.BeltoftScannerData;
 	if ( ! cfg ) { return; }
 
 	var t = cfg.i18n;
@@ -35,7 +35,7 @@
 	var RETRY_MS = 5000;
 
 	/** Where scans wait out a lost connection or a lost session. */
-	var QUEUE_KEY = 'b2bs.queue';
+	var QUEUE_KEY = 'bscan.queue';
 
 	var state = {
 		open: false,
@@ -101,17 +101,17 @@
 
 	function toast( text, actions, tone ) {
 		var box = document.createElement( 'div' );
-		box.className = 'b2bs-toast' + ( tone ? ' b2bs-toast--' + tone : '' );
+		box.className = 'bscan-toast' + ( tone ? ' bscan-toast--' + tone : '' );
 
 		var msg = document.createElement( 'span' );
-		msg.className = 'b2bs-toast__text';
+		msg.className = 'bscan-toast__text';
 		msg.textContent = text;
 		box.appendChild( msg );
 
 		( actions || [] ).forEach( function ( action ) {
 			var btn = document.createElement( 'button' );
 			btn.type = 'button';
-			btn.className = 'b2bs-toast__action';
+			btn.className = 'bscan-toast__action';
 			btn.textContent = action.label;
 			btn.addEventListener( 'click', function () {
 				action.run();
@@ -184,10 +184,10 @@
 		var input = row.querySelector( '.beltoft-loop-qty__input, input.qty' );
 		if ( input && null !== quantity && quantity > 0 ) { input.value = quantity; }
 
-		row.classList.remove( 'b2bs-hit' );
+		row.classList.remove( 'bscan-hit' );
 		// Reflow so the animation restarts when the same row is scanned twice.
 		void row.offsetWidth;
-		row.classList.add( 'b2bs-hit' );
+		row.classList.add( 'bscan-hit' );
 
 		row.scrollIntoView( { block: 'center', behavior: 'smooth' } );
 
@@ -291,10 +291,10 @@
 		 */
 		el.lines.appendChild( node );
 
-		node.querySelector( '.b2bs-line__qty' ).value = line.quantity;
-		node.querySelector( '.b2bs-line__total' ).textContent = line.line_total;
+		node.querySelector( '.bscan-line__qty' ).value = line.quantity;
+		node.querySelector( '.bscan-line__total' ).textContent = line.line_total;
 
-		var note = node.querySelector( '.b2bs-line__note' );
+		var note = node.querySelector( '.bscan-line__note' );
 		if ( null !== line.stock && line.stock <= line.quantity ) {
 			note.textContent = sprintf( t.available, [ line.stock ] );
 			note.hidden = false;
@@ -309,26 +309,26 @@
 
 	function buildLine( line ) {
 		var li = document.createElement( 'li' );
-		li.className = 'b2bs-line';
+		li.className = 'bscan-line';
 		li.dataset.productId = line.product_id;
 
 		li.innerHTML =
-			'<div class="b2bs-line__thumb">' +
+			'<div class="bscan-line__thumb">' +
 				( line.thumbnail ? '<img src="" alt="" loading="lazy">' : '' ) +
 			'</div>' +
-			'<div class="b2bs-line__body">' +
-				'<p class="b2bs-line__name"></p>' +
-				'<p class="b2bs-line__note" hidden></p>' +
-				'<div class="b2bs-line__controls">' +
-					'<button type="button" class="b2bs-step" data-step="-1" aria-label="' + t.less + '">&minus;</button>' +
-					'<input type="number" class="b2bs-line__qty" min="0" step="1" inputmode="numeric" aria-label="' + t.qty + '">' +
-					'<button type="button" class="b2bs-step" data-step="1" aria-label="' + t.more + '">+</button>' +
-					'<button type="button" class="b2bs-line__remove" aria-label="' + t.remove + '">&times;</button>' +
+			'<div class="bscan-line__body">' +
+				'<p class="bscan-line__name"></p>' +
+				'<p class="bscan-line__note" hidden></p>' +
+				'<div class="bscan-line__controls">' +
+					'<button type="button" class="bscan-step" data-step="-1" aria-label="' + t.less + '">&minus;</button>' +
+					'<input type="number" class="bscan-line__qty" min="0" step="1" inputmode="numeric" aria-label="' + t.qty + '">' +
+					'<button type="button" class="bscan-step" data-step="1" aria-label="' + t.more + '">+</button>' +
+					'<button type="button" class="bscan-line__remove" aria-label="' + t.remove + '">&times;</button>' +
 				'</div>' +
 			'</div>' +
-			'<span class="b2bs-line__total"></span>';
+			'<span class="bscan-line__total"></span>';
 
-		li.querySelector( '.b2bs-line__name' ).textContent = line.name;
+		li.querySelector( '.bscan-line__name' ).textContent = line.name;
 
 		if ( line.thumbnail ) {
 			li.querySelector( 'img' ).src = line.thumbnail;
@@ -340,10 +340,10 @@
 		li.querySelector( '[data-step="1"]' ).addEventListener( 'click', function () {
 			adjust( line.product_id, { delta: 1 } );
 		} );
-		li.querySelector( '.b2bs-line__remove' ).addEventListener( 'click', function () {
+		li.querySelector( '.bscan-line__remove' ).addEventListener( 'click', function () {
 			adjust( line.product_id, { set: 0 } );
 		} );
-		li.querySelector( '.b2bs-line__qty' ).addEventListener( 'change', function ( e ) {
+		li.querySelector( '.bscan-line__qty' ).addEventListener( 'change', function ( e ) {
 			var value = parseInt( e.target.value, 10 );
 			adjust( line.product_id, { set: isNaN( value ) || value < 0 ? 0 : value } );
 		} );
@@ -500,6 +500,11 @@
 	}
 
 	function outOfStock( product ) {
+		if ( ! cfg.canNotify ) {
+			toast( product.name + ' · ' + t.noStock, null, 'warn' );
+			return;
+		}
+
 		toast( product.name + ' · ' + t.noStock, [ {
 			label: t.notify,
 			run: function () {
@@ -654,7 +659,7 @@
 
 	function showExternalHint() {
 		var link = document.createElement( 'a' );
-		link.className = 'b2bs-external';
+		link.className = 'bscan-external';
 		link.href = window.location.href;
 		link.target = '_blank';
 		link.rel = 'noopener';
@@ -778,9 +783,9 @@
 		state.open = true;
 		el.panel.hidden = false;
 		el.panel.setAttribute( 'aria-hidden', 'false' );
-		document.body.classList.add( 'b2bs-open' );
+		document.body.classList.add( 'bscan-open' );
 
-		document.querySelectorAll( '[data-b2bs-open]' ).forEach( function ( b ) {
+		document.querySelectorAll( '[data-bscan-open]' ).forEach( function ( b ) {
 			b.setAttribute( 'aria-expanded', 'true' );
 		} );
 
@@ -801,10 +806,10 @@
 
 		el.panel.hidden = true;
 		el.panel.setAttribute( 'aria-hidden', 'true' );
-		document.body.classList.remove( 'b2bs-open' );
+		document.body.classList.remove( 'bscan-open' );
 		status( '' );
 
-		document.querySelectorAll( '[data-b2bs-open]' ).forEach( function ( b ) {
+		document.querySelectorAll( '[data-bscan-open]' ).forEach( function ( b ) {
 			b.setAttribute( 'aria-expanded', 'false' );
 		} );
 	}
@@ -812,27 +817,27 @@
 	/* ------------------------------------------------------------------ init */
 
 	function init() {
-		el.panel = $( 'b2bs-panel' );
-		el.video = $( 'b2bs-video' );
-		el.status = $( 'b2bs-status' );
-		el.torch = $( 'b2bs-torch' );
-		el.toasts = $( 'b2bs-toasts' );
-		el.manual = $( 'b2bs-manual' );
-		el.manualInput = $( 'b2bs-manual-input' );
-		el.lines = $( 'b2bs-lines' );
-		el.empty = $( 'b2bs-empty' );
-		el.count = $( 'b2bs-count' );
-		el.subtotal = $( 'b2bs-subtotal' );
-		el.go = $( 'b2bs-go' );
+		el.panel = $( 'bscan-panel' );
+		el.video = $( 'bscan-video' );
+		el.status = $( 'bscan-status' );
+		el.torch = $( 'bscan-torch' );
+		el.toasts = $( 'bscan-toasts' );
+		el.manual = $( 'bscan-manual' );
+		el.manualInput = $( 'bscan-manual-input' );
+		el.lines = $( 'bscan-lines' );
+		el.empty = $( 'bscan-empty' );
+		el.count = $( 'bscan-count' );
+		el.subtotal = $( 'bscan-subtotal' );
+		el.go = $( 'bscan-go' );
 
 		if ( ! el.panel ) { return; }
 
 		document.addEventListener( 'click', function ( e ) {
-			var trigger = e.target.closest( '[data-b2bs-open]' );
+			var trigger = e.target.closest( '[data-bscan-open]' );
 			if ( trigger ) { e.preventDefault(); open(); }
 		} );
 
-		$( 'b2bs-close' ).addEventListener( 'click', close );
+		$( 'bscan-close' ).addEventListener( 'click', close );
 
 		document.addEventListener( 'keydown', function ( e ) {
 			if ( 'Escape' === e.key && state.open ) { close(); }

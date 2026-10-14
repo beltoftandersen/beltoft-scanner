@@ -1,13 +1,13 @@
 <?php
 
-namespace B2BScanner\Admin;
+namespace BeltoftScanner\Admin;
 
-use B2BScanner\Log\Repository;
+use BeltoftScanner\Log\Repository;
 
 defined( 'ABSPATH' ) || exit;
 
 /**
- * The list of barcodes that did not resolve, so they can be fixed in Odoo.
+ * The list of barcodes that did not resolve, so they can be fixed at the source.
  *
  * Grouped by code and ordered with reported codes first, then by how often each
  * one has come back: a code scanned forty times is one gap that forty orders
@@ -40,7 +40,7 @@ class MissesPage {
 		$rows = Repository::summary();
 
 		echo '<div class="wrap"><h1>' . esc_html__( 'Unresolved codes', 'beltoft-scanner' ) . '</h1>';
-		echo '<p>' . esc_html__( 'Scanned codes that did not match a product. Fix them in Odoo.', 'beltoft-scanner' ) . '</p>';
+		echo '<p>' . esc_html__( 'Scanned codes that did not give an orderable product. Most are fixed on the product itself: its SKU or GTIN.', 'beltoft-scanner' ) . '</p>';
 
 		if ( ! $rows ) {
 			echo '<p><em>' . esc_html__( 'Nothing to resolve.', 'beltoft-scanner' ) . '</em></p></div>';

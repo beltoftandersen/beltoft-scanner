@@ -5,15 +5,15 @@
  * Not namespaced on purpose: Bricks includes this file and then instantiates
  * the class by the global name it discovers in it.
  *
- * @package B2BScanner
+ * @package BeltoftScanner
  */
 
 defined( 'ABSPATH' ) || exit;
 
-class Element_B2B_Scan_Button extends \Bricks\Element {
+class Element_Beltoft_Scan_Button extends \Bricks\Element {
 
 	public $category = 'woocommerce';
-	public $name     = 'b2b-scan-button';
+	public $name     = 'beltoft-scan-button';
 	public $icon     = 'ti-camera';
 
 	public function get_label() {
@@ -33,14 +33,14 @@ class Element_B2B_Scan_Button extends \Bricks\Element {
 		 * Bricks already has a conditions system, and this site uses it for
 		 * logged-in and role checks elsewhere. This control exists so the button
 		 * can be restricted without leaving the builder, but it is not the
-		 * security boundary: B2BScanner\Support\Context decides on the server
+		 * security boundary: BeltoftScanner\Support\Context decides on the server
 		 * whether the button renders and whether the endpoints answer, and it
 		 * does so whatever is set here.
 		 */
 		$this->controls['rolesInfo'] = array(
 			'tab'     => 'content',
 			'type'    => 'info',
-			'content' => esc_html__( 'Visible only on pages where a plugin turns the scanner on (B2B ordering, POS), to users allowed to scan, and on small screens. Use Bricks conditions to restrict it further.', 'beltoft-scanner' ),
+			'content' => esc_html__( 'Visible only on pages where another plugin turns the scanner on, to users it allows to scan, and on small screens. Use Bricks conditions to restrict it further.', 'beltoft-scanner' ),
 		);
 
 		$this->controls['alwaysVisible'] = array(
@@ -57,7 +57,7 @@ class Element_B2B_Scan_Button extends \Bricks\Element {
 			? $settings['label']
 			: esc_html__( 'Scan code', 'beltoft-scanner' );
 
-		if ( ! \B2BScanner\Support\Context::applies() ) {
+		if ( ! \BeltoftScanner\Support\Context::applies() ) {
 			// In the builder, show why nothing renders instead of an empty box.
 			if ( bricks_is_builder_call() ) {
 				echo '<div ' . $this->render_attributes( '_root' ) . '>'
@@ -68,10 +68,10 @@ class Element_B2B_Scan_Button extends \Bricks\Element {
 			return;
 		}
 
-		$classes = empty( $settings['alwaysVisible'] ) ? '' : ' b2bs-trigger--always';
+		$classes = empty( $settings['alwaysVisible'] ) ? '' : ' bscan-trigger--always';
 
 		echo '<div ' . $this->render_attributes( '_root' ) . '>'
-			. str_replace( 'class="b2bs-trigger"', 'class="b2bs-trigger' . esc_attr( $classes ) . '"', \B2BScanner\Ui\Shortcode::markup( $label ) )
+			. str_replace( 'class="bscan-trigger"', 'class="bscan-trigger' . esc_attr( $classes ) . '"', \BeltoftScanner\Ui\Shortcode::markup( $label ) )
 			. '</div>';
 	}
 }

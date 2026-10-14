@@ -1,7 +1,7 @@
 <?php
 
-use B2BScanner\Rest\Routes;
-use B2BScanner\Support\Context;
+use BeltoftScanner\Rest\Routes;
+use BeltoftScanner\Support\Context;
 
 /**
  * Where the scanner appears and who may use it is decided by the plugins that

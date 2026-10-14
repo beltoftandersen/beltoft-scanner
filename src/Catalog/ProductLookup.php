@@ -1,8 +1,8 @@
 <?php
 
-namespace B2BScanner\Catalog;
+namespace BeltoftScanner\Catalog;
 
-use B2BScanner\Log\Repository as Log;
+use BeltoftScanner\Log\Repository as Log;
 use WC_Product;
 
 defined( 'ABSPATH' ) || exit;
@@ -170,7 +170,7 @@ class ProductLookup {
 	 * @return WC_Product|null
 	 */
 	private static function replacement_for( WC_Product $product ) {
-		$replacement = apply_filters( 'b2b_scanner_replacement_for', null, $product );
+		$replacement = apply_filters( 'beltoft_scanner_replacement_for', null, $product );
 
 		if ( is_numeric( $replacement ) ) {
 			$replacement = wc_get_product( (int) $replacement );
