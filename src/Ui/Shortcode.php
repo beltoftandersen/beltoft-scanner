@@ -33,7 +33,7 @@ class Shortcode {
 		}
 
 		$atts = shortcode_atts(
-			array( 'label' => __( 'Ler código', 'b2b-scanner' ) ),
+			array( 'label' => __( 'Scan code', 'beltoft-scanner' ) ),
 			(array) $atts,
 			self::TAG
 		);

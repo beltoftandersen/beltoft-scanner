@@ -501,7 +501,7 @@
 	}
 
 	function notFound( code ) {
-		toast( sprintf( t.notFound || 'Código não encontrado: %s', [ code ] ), [ {
+		toast( sprintf( t.notFound || 'Code not found: %s', [ code ] ), [ {
 			label: t.report,
 			run: function () {
 				api( '/report', { method: 'POST', body: { code: code } } )

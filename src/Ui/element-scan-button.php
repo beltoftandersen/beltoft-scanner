@@ -17,16 +17,16 @@ class Element_B2B_Scan_Button extends \Bricks\Element {
 	public $icon     = 'ti-camera';
 
 	public function get_label() {
-		return esc_html__( 'Ler código de barras (B2B)', 'b2b-scanner' );
+		return esc_html__( 'Scan barcode', 'beltoft-scanner' );
 	}
 
 	public function set_controls() {
 		$this->controls['label'] = array(
 			'tab'         => 'content',
-			'label'       => esc_html__( 'Texto', 'b2b-scanner' ),
+			'label'       => esc_html__( 'Text', 'beltoft-scanner' ),
 			'type'        => 'text',
-			'default'     => esc_html__( 'Ler código', 'b2b-scanner' ),
-			'placeholder' => esc_html__( 'Ler código', 'b2b-scanner' ),
+			'default'     => esc_html__( 'Scan code', 'beltoft-scanner' ),
+			'placeholder' => esc_html__( 'Scan code', 'beltoft-scanner' ),
 		);
 
 		/*
@@ -40,14 +40,14 @@ class Element_B2B_Scan_Button extends \Bricks\Element {
 		$this->controls['rolesInfo'] = array(
 			'tab'     => 'content',
 			'type'    => 'info',
-			'content' => esc_html__( 'Visível apenas para parceiros aprovados, na página de encomenda e em ecrãs pequenos. Use as condições do Bricks para restringir mais.', 'b2b-scanner' ),
+			'content' => esc_html__( 'Visible only on pages where a plugin turns the scanner on (B2B ordering, POS), to users allowed to scan, and on small screens. Use Bricks conditions to restrict it further.', 'beltoft-scanner' ),
 		);
 
 		$this->controls['alwaysVisible'] = array(
 			'tab'         => 'content',
-			'label'       => esc_html__( 'Mostrar também em ecrãs grandes', 'b2b-scanner' ),
+			'label'       => esc_html__( 'Also show on large screens', 'beltoft-scanner' ),
 			'type'        => 'checkbox',
-			'description' => esc_html__( 'Por omissão o botão só aparece abaixo do breakpoint mobile landscape do Bricks.', 'b2b-scanner' ),
+			'description' => esc_html__( 'By default the button only shows below the Bricks mobile landscape breakpoint.', 'beltoft-scanner' ),
 		);
 	}
 
@@ -55,13 +55,13 @@ class Element_B2B_Scan_Button extends \Bricks\Element {
 		$settings = $this->settings;
 		$label    = isset( $settings['label'] ) && '' !== $settings['label']
 			? $settings['label']
-			: esc_html__( 'Ler código', 'b2b-scanner' );
+			: esc_html__( 'Scan code', 'beltoft-scanner' );
 
 		if ( ! \B2BScanner\Support\Context::applies() ) {
 			// In the builder, show why nothing renders instead of an empty box.
 			if ( bricks_is_builder_call() ) {
 				echo '<div ' . $this->render_attributes( '_root' ) . '>'
-					. esc_html__( 'O botão aparece na página de encomenda, para parceiros aprovados.', 'b2b-scanner' )
+					. esc_html__( 'The button shows on pages where the scanner is active, to users allowed to scan.', 'beltoft-scanner' )
 					. '</div>';
 			}
 

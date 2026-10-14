@@ -17,7 +17,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Assets {
 
-	public const HANDLE = 'b2b-scanner';
+	public const HANDLE = 'beltoft-scanner';
 
 	public static function register(): void {
 		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'enqueue' ) );
@@ -60,37 +60,37 @@ class Assets {
 			 */
 			'zxingUrl'   => esc_url_raw( B2B_SCANNER_URL . 'assets/lib/zxing-browser.min.js' ),
 			'i18n'       => array(
-				'title'         => __( 'Ler código de barras', 'b2b-scanner' ),
-				'close'         => __( 'Fechar', 'b2b-scanner' ),
-				'torch'         => __( 'Luz', 'b2b-scanner' ),
-				'manual'        => __( 'Introduzir código', 'b2b-scanner' ),
-				'manualPlace'   => __( 'EAN ou referência', 'b2b-scanner' ),
-				'add'           => __( 'Adicionar', 'b2b-scanner' ),
-				'undo'          => __( 'Anular', 'b2b-scanner' ),
-				'report'        => __( 'Reportar', 'b2b-scanner' ),
-				'notify'        => __( 'Notificar-me', 'b2b-scanner' ),
+				'title'         => __( 'Scan barcode', 'beltoft-scanner' ),
+				'close'         => __( 'Close', 'beltoft-scanner' ),
+				'torch'         => __( 'Light', 'beltoft-scanner' ),
+				'manual'        => __( 'Enter code', 'beltoft-scanner' ),
+				'manualPlace'   => __( 'EAN or SKU', 'beltoft-scanner' ),
+				'add'           => __( 'Add', 'beltoft-scanner' ),
+				'undo'          => __( 'Undo', 'beltoft-scanner' ),
+				'report'        => __( 'Report', 'beltoft-scanner' ),
+				'notify'        => __( 'Notify me', 'beltoft-scanner' ),
 				/* translators: %s: the scanned barcode. */
-				'notFound'      => __( 'Código não encontrado: %s', 'b2b-scanner' ),
-				'noStock'       => __( 'Sem stock', 'b2b-scanner' ),
-				'pending'       => __( 'pendente', 'b2b-scanner' ),
-				'offline'       => __( 'Sem ligação. Os códigos ficam guardados.', 'b2b-scanner' ),
-				'denied'        => __( 'Não conseguimos aceder à câmara. Autorize o acesso nas definições do navegador ou introduza o código manualmente.', 'b2b-scanner' ),
-				'noCamera'      => __( 'Este dispositivo não tem câmara disponível. Introduza o código manualmente.', 'b2b-scanner' ),
-				'webview'       => __( 'A câmara não funciona dentro desta aplicação. Abra a página no Safari ou no Chrome.', 'b2b-scanner' ),
-				'openExternal'  => __( 'Abrir no navegador', 'b2b-scanner' ),
-				'sessionLost'   => __( 'A sessão expirou. Inicie sessão novamente para continuar — as leituras ficam guardadas.', 'b2b-scanner' ),
-				'signIn'        => __( 'Iniciar sessão', 'b2b-scanner' ),
-				'restored'      => __( 'Recuperámos as leituras que tinha pendentes.', 'b2b-scanner' ),
-				'available'     => __( 'Disponível: %s', 'b2b-scanner' ),
-				'added'         => __( '%1$s · %2$s na encomenda', 'b2b-scanner' ),
-				'starting'      => __( 'A iniciar a câmara…', 'b2b-scanner' ),
-				'oneLine'       => __( '%s artigo', 'b2b-scanner' ),
+				'notFound'      => __( 'Code not found: %s', 'beltoft-scanner' ),
+				'noStock'       => __( 'Out of stock', 'beltoft-scanner' ),
+				'pending'       => __( 'pending', 'beltoft-scanner' ),
+				'offline'       => __( 'No connection. Your codes are saved.', 'beltoft-scanner' ),
+				'denied'        => __( 'We could not access the camera. Allow access in your browser settings or enter the code manually.', 'beltoft-scanner' ),
+				'noCamera'      => __( 'This device has no camera available. Enter the code manually.', 'beltoft-scanner' ),
+				'webview'       => __( 'The camera does not work inside this app. Open the page in Safari or Chrome.', 'beltoft-scanner' ),
+				'openExternal'  => __( 'Open in browser', 'beltoft-scanner' ),
+				'sessionLost'   => __( 'Your session has expired. Sign in again to continue — your scans are saved.', 'beltoft-scanner' ),
+				'signIn'        => __( 'Sign in', 'beltoft-scanner' ),
+				'restored'      => __( 'We recovered your pending scans.', 'beltoft-scanner' ),
+				'available'     => __( 'Available: %s', 'beltoft-scanner' ),
+				'added'         => __( '%1$s · %2$s in the order', 'beltoft-scanner' ),
+				'starting'      => __( 'Starting the camera…', 'beltoft-scanner' ),
+				'oneLine'       => __( '%s item', 'beltoft-scanner' ),
 				/* translators: %s: number of items on the order. */
-				'nLines'        => __( '%s artigos', 'b2b-scanner' ),
-				'more'          => __( 'Aumentar quantidade', 'b2b-scanner' ),
-				'less'          => __( 'Diminuir quantidade', 'b2b-scanner' ),
-				'qty'           => __( 'Quantidade', 'b2b-scanner' ),
-				'remove'        => __( 'Remover', 'b2b-scanner' ),
+				'nLines'        => __( '%s items', 'beltoft-scanner' ),
+				'more'          => __( 'Increase quantity', 'beltoft-scanner' ),
+				'less'          => __( 'Decrease quantity', 'beltoft-scanner' ),
+				'qty'           => __( 'Quantity', 'beltoft-scanner' ),
+				'remove'        => __( 'Remove', 'beltoft-scanner' ),
 			),
 		);
 	}

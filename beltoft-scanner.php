@@ -1,10 +1,10 @@
 <?php
 /**
  * Plugin Name: Beltoft Scanner
- * Description: Scan product barcodes with the phone camera straight into the trade ordering list.
+ * Description: Scan product barcodes with the phone camera into the WooCommerce cart, on the pages other plugins register it for.
  * Version:     1.0.5
  * Author:      beltoft.net
- * Text Domain: b2b-scanner
+ * Text Domain: beltoft-scanner
  * Domain Path: /languages
  * Requires PHP: 8.1
  */
@@ -39,6 +39,6 @@ spl_autoload_register(
 register_activation_hook( __FILE__, array( 'B2BScanner\Log\Table', 'install' ) );
 
 add_action( 'plugins_loaded', static function () {
-	load_plugin_textdomain( 'b2b-scanner', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
+	load_plugin_textdomain( 'beltoft-scanner', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
 	B2BScanner\Plugin::init();
 } );

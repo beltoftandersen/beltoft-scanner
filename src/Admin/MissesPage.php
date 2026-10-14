@@ -15,7 +15,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class MissesPage {
 
-	private const SLUG = 'b2b-scanner-misses';
+	private const SLUG = 'beltoft-scanner-misses';
 
 	public static function register(): void {
 		add_action( 'admin_menu', array( __CLASS__, 'menu' ) );
@@ -24,8 +24,8 @@ class MissesPage {
 	public static function menu(): void {
 		add_submenu_page(
 			'woocommerce',
-			__( 'Códigos por resolver', 'b2b-scanner' ),
-			__( 'Códigos por resolver', 'b2b-scanner' ),
+			__( 'Unresolved codes', 'beltoft-scanner' ),
+			__( 'Unresolved codes', 'beltoft-scanner' ),
 			'manage_woocommerce',
 			self::SLUG,
 			array( __CLASS__, 'render' )
@@ -39,22 +39,22 @@ class MissesPage {
 
 		$rows = Repository::summary();
 
-		echo '<div class="wrap"><h1>' . esc_html__( 'Códigos por resolver', 'b2b-scanner' ) . '</h1>';
-		echo '<p>' . esc_html__( 'Códigos lidos na página de encomenda que não deram um produto. Corrija-os em Odoo.', 'b2b-scanner' ) . '</p>';
+		echo '<div class="wrap"><h1>' . esc_html__( 'Unresolved codes', 'beltoft-scanner' ) . '</h1>';
+		echo '<p>' . esc_html__( 'Scanned codes that did not match a product. Fix them in Odoo.', 'beltoft-scanner' ) . '</p>';
 
 		if ( ! $rows ) {
-			echo '<p><em>' . esc_html__( 'Nada por resolver.', 'b2b-scanner' ) . '</em></p></div>';
+			echo '<p><em>' . esc_html__( 'Nothing to resolve.', 'beltoft-scanner' ) . '</em></p></div>';
 
 			return;
 		}
 
 		echo '<table class="widefat striped"><thead><tr>'
-			. '<th>' . esc_html__( 'Código', 'b2b-scanner' ) . '</th>'
-			. '<th>' . esc_html__( 'Motivo', 'b2b-scanner' ) . '</th>'
-			. '<th>' . esc_html__( 'Leituras', 'b2b-scanner' ) . '</th>'
-			. '<th>' . esc_html__( 'Última', 'b2b-scanner' ) . '</th>'
-			. '<th>' . esc_html__( 'Produto', 'b2b-scanner' ) . '</th>'
-			. '<th>' . esc_html__( 'Reportado', 'b2b-scanner' ) . '</th>'
+			. '<th>' . esc_html__( 'Code', 'beltoft-scanner' ) . '</th>'
+			. '<th>' . esc_html__( 'Reason', 'beltoft-scanner' ) . '</th>'
+			. '<th>' . esc_html__( 'Scans', 'beltoft-scanner' ) . '</th>'
+			. '<th>' . esc_html__( 'Last', 'beltoft-scanner' ) . '</th>'
+			. '<th>' . esc_html__( 'Product', 'beltoft-scanner' ) . '</th>'
+			. '<th>' . esc_html__( 'Reported', 'beltoft-scanner' ) . '</th>'
 			. '</tr></thead><tbody>';
 
 		foreach ( $rows as $row ) {
@@ -67,7 +67,7 @@ class MissesPage {
 				(int) $row->hits,
 				esc_html( $row->last_seen ),
 				$product ? esc_html( $product->get_name() ) : '&mdash;',
-				$row->reported ? esc_html__( 'Sim', 'b2b-scanner' ) : '&mdash;'
+				$row->reported ? esc_html__( 'Yes', 'beltoft-scanner' ) : '&mdash;'
 			);
 		}
 
@@ -76,11 +76,11 @@ class MissesPage {
 
 	private static function reason_label( string $reason ): string {
 		$labels = array(
-			Repository::NOT_FOUND       => __( 'Sem produto com este código', 'b2b-scanner' ),
-			Repository::NOT_PURCHASABLE => __( 'Existe, mas não disponível para esta conta', 'b2b-scanner' ),
-			Repository::NOT_VISIBLE     => __( 'Fora do catálogo de parceiros', 'b2b-scanner' ),
-			Repository::OUT_OF_STOCK    => __( 'Sem stock', 'b2b-scanner' ),
-			Repository::DISCONTINUED    => __( 'Descontinuado', 'b2b-scanner' ),
+			Repository::NOT_FOUND       => __( 'No product with this code', 'beltoft-scanner' ),
+			Repository::NOT_PURCHASABLE => __( 'Exists, but not available to this account', 'beltoft-scanner' ),
+			Repository::NOT_VISIBLE     => __( 'Outside this account\'s catalogue', 'beltoft-scanner' ),
+			Repository::OUT_OF_STOCK    => __( 'Out of stock', 'beltoft-scanner' ),
+			Repository::DISCONTINUED    => __( 'Discontinued', 'beltoft-scanner' ),
 		);
 
 		return $labels[ $reason ] ?? $reason;

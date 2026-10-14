@@ -131,11 +131,11 @@ class Routes {
 
 	public static function may_scan() {
 		if ( ! is_user_logged_in() ) {
-			return new WP_Error( 'b2b_scanner_auth', __( 'Inicie sessão para continuar.', 'b2b-scanner' ), array( 'status' => 401 ) );
+			return new WP_Error( 'b2b_scanner_auth', __( 'Sign in to continue.', 'beltoft-scanner' ), array( 'status' => 401 ) );
 		}
 
 		if ( ! Context::user_may_scan() ) {
-			return new WP_Error( 'b2b_scanner_forbidden', __( 'A sua conta não tem acesso ao catálogo de parceiros.', 'b2b-scanner' ), array( 'status' => 403 ) );
+			return new WP_Error( 'b2b_scanner_forbidden', __( 'Your account does not have access to the scanner.', 'beltoft-scanner' ), array( 'status' => 403 ) );
 		}
 
 		return true;
@@ -152,7 +152,7 @@ class Routes {
 			return new WP_Error(
 				'b2b_scanner_not_found',
 				/* translators: %s: the scanned barcode. */
-				sprintf( __( 'Código não encontrado: %s', 'b2b-scanner' ), $code ),
+				sprintf( __( 'Code not found: %s', 'beltoft-scanner' ), $code ),
 				array( 'status' => 404, 'reason' => Log::NOT_FOUND, 'code_scanned' => $code )
 			);
 		}
@@ -172,7 +172,7 @@ class Routes {
 			 */
 			return new WP_Error(
 				'b2b_scanner_not_found',
-				sprintf( __( 'Código não encontrado: %s', 'b2b-scanner' ), $code ),
+				sprintf( __( 'Code not found: %s', 'beltoft-scanner' ), $code ),
 				array( 'status' => 404, 'reason' => $status, 'code_scanned' => $code )
 			);
 		}
@@ -222,7 +222,7 @@ class Routes {
 		$product    = wc_get_product( $product_id );
 
 		if ( ! $product instanceof WC_Product ) {
-			return new WP_Error( 'b2b_scanner_bad_product', __( 'Produto inválido.', 'b2b-scanner' ), array( 'status' => 400 ) );
+			return new WP_Error( 'b2b_scanner_bad_product', __( 'Invalid product.', 'beltoft-scanner' ), array( 'status' => 400 ) );
 		}
 
 		$verdict = ProductLookup::assess( $product, get_current_user_id() );
@@ -230,7 +230,7 @@ class Routes {
 		if ( ProductLookup::OK !== $verdict['status'] && $delta > 0 ) {
 			return new WP_Error(
 				'b2b_scanner_not_orderable',
-				__( 'Este produto não pode ser adicionado.', 'b2b-scanner' ),
+				__( 'This product cannot be added.', 'beltoft-scanner' ),
 				array( 'status' => 409, 'reason' => $verdict['status'] )
 			);
 		}
@@ -243,7 +243,7 @@ class Routes {
 		 * 500 while the lookup beside it worked fine.
 		 */
 		if ( ! self::ready_cart() ) {
-			return new WP_Error( 'b2b_scanner_no_cart', __( 'Carrinho indisponível.', 'b2b-scanner' ), array( 'status' => 500 ) );
+			return new WP_Error( 'b2b_scanner_no_cart', __( 'Cart unavailable.', 'beltoft-scanner' ), array( 'status' => 500 ) );
 		}
 
 		$result = self::apply_delta( $product, $delta, $request->get_param( 'set' ) );
@@ -268,7 +268,7 @@ class Routes {
 	 */
 	private static function apply_delta( WC_Product $product, int $delta, $set ) {
 		if ( ! self::ready_cart() ) {
-			return new WP_Error( 'b2b_scanner_no_cart', __( 'Carrinho indisponível.', 'b2b-scanner' ), array( 'status' => 500 ) );
+			return new WP_Error( 'b2b_scanner_no_cart', __( 'Cart unavailable.', 'beltoft-scanner' ), array( 'status' => 500 ) );
 		}
 
 		$parent_id    = $product->get_parent_id();
@@ -324,7 +324,7 @@ class Routes {
 
 				return new WP_Error(
 					'b2b_scanner_add_failed',
-					$notices ? wp_strip_all_tags( $notices[0]['notice'] ?? '' ) : __( 'Não foi possível adicionar este produto.', 'b2b-scanner' ),
+					$notices ? wp_strip_all_tags( $notices[0]['notice'] ?? '' ) : __( 'This product could not be added.', 'beltoft-scanner' ),
 					array( 'status' => 409 )
 				);
 			}
@@ -401,7 +401,7 @@ class Routes {
 	 */
 	public static function cart_contents() {
 		if ( ! self::ready_cart() ) {
-			return new WP_Error( 'b2b_scanner_no_cart', __( 'Carrinho indisponível.', 'b2b-scanner' ), array( 'status' => 500 ) );
+			return new WP_Error( 'b2b_scanner_no_cart', __( 'Cart unavailable.', 'beltoft-scanner' ), array( 'status' => 500 ) );
 		}
 
 		return new WP_REST_Response( self::cart_state(), 200 );
@@ -419,7 +419,7 @@ class Routes {
 		Log::report( $code, get_current_user_id() );
 
 		return new WP_REST_Response(
-			array( 'reported' => true, 'message' => __( 'Obrigado. Vamos verificar este código.', 'b2b-scanner' ) ),
+			array( 'reported' => true, 'message' => __( 'Thank you. We will check this code.', 'beltoft-scanner' ) ),
 			200
 		);
 	}
@@ -438,13 +438,13 @@ class Routes {
 		$user       = wp_get_current_user();
 
 		if ( ! $product instanceof WC_Product ) {
-			return new WP_Error( 'b2b_scanner_bad_product', __( 'Produto inválido.', 'b2b-scanner' ), array( 'status' => 400 ) );
+			return new WP_Error( 'b2b_scanner_bad_product', __( 'Invalid product.', 'beltoft-scanner' ), array( 'status' => 400 ) );
 		}
 
 		if ( ! class_exists( '\BeltoftInStockNotifier\Subscription\Repository' ) ) {
 			return new WP_Error(
 				'b2b_scanner_no_notifier',
-				__( 'Os avisos de reposição não estão disponíveis de momento.', 'b2b-scanner' ),
+				__( 'Back-in-stock alerts are not available at the moment.', 'beltoft-scanner' ),
 				array( 'status' => 503 )
 			);
 		}
@@ -466,8 +466,8 @@ class Routes {
 				'subscribed' => true,
 				'already'    => 0 === $id,
 				'message'    => 0 === $id
-					? __( 'Já está a ser avisado deste produto.', 'b2b-scanner' )
-					: __( 'Avisamos assim que houver stock.', 'b2b-scanner' ),
+					? __( 'You are already being notified about this product.', 'beltoft-scanner' )
+					: __( 'We will let you know as soon as it is back in stock.', 'beltoft-scanner' ),
 			),
 			200
 		);

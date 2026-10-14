@@ -1,0 +1,301 @@
+# Copyright (C) 2026 beltoft.net
+# This file is distributed under the same license as the Beltoft Scanner plugin.
+msgid ""
+msgstr ""
+"Project-Id-Version: Beltoft Scanner 1.0.5\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/beltoft-scanner\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: pt_PT\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-10-14T08:36:01+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: beltoft-scanner\n"
+
+#. Plugin Name of the plugin
+#: beltoft-scanner.php
+msgid "Beltoft Scanner"
+msgstr ""
+
+#. Description of the plugin
+#: beltoft-scanner.php
+msgid "Scan product barcodes with the phone camera into the WooCommerce cart, on the pages other plugins register it for."
+msgstr "Leia códigos de barras de produtos com a câmara do telemóvel diretamente para o carrinho WooCommerce, nas páginas em que outros plugins o ativam."
+
+#. Author of the plugin
+#: beltoft-scanner.php
+msgid "beltoft.net"
+msgstr ""
+
+#: src/Admin/MissesPage.php:27
+#: src/Admin/MissesPage.php:28
+#: src/Admin/MissesPage.php:42
+msgid "Unresolved codes"
+msgstr "Códigos por resolver"
+
+#: src/Admin/MissesPage.php:43
+msgid "Scanned codes that did not match a product. Fix them in Odoo."
+msgstr "Códigos lidos que não deram um produto. Corrija-os em Odoo."
+
+#: src/Admin/MissesPage.php:46
+msgid "Nothing to resolve."
+msgstr "Nada por resolver."
+
+#: src/Admin/MissesPage.php:52
+msgid "Code"
+msgstr "Código"
+
+#: src/Admin/MissesPage.php:53
+msgid "Reason"
+msgstr "Motivo"
+
+#: src/Admin/MissesPage.php:54
+msgid "Scans"
+msgstr "Leituras"
+
+#: src/Admin/MissesPage.php:55
+msgid "Last"
+msgstr "Última"
+
+#: src/Admin/MissesPage.php:56
+msgid "Product"
+msgstr "Produto"
+
+#: src/Admin/MissesPage.php:57
+msgid "Reported"
+msgstr "Reportado"
+
+#: src/Admin/MissesPage.php:70
+msgid "Yes"
+msgstr "Sim"
+
+#: src/Admin/MissesPage.php:79
+msgid "No product with this code"
+msgstr "Sem produto com este código"
+
+#: src/Admin/MissesPage.php:80
+msgid "Exists, but not available to this account"
+msgstr "Existe, mas não disponível para esta conta"
+
+#: src/Admin/MissesPage.php:81
+msgid "Outside this account's catalogue"
+msgstr "Fora do catálogo desta conta"
+
+#: src/Admin/MissesPage.php:82
+#: src/Ui/Assets.php:74
+msgid "Out of stock"
+msgstr "Sem stock"
+
+#: src/Admin/MissesPage.php:83
+msgid "Discontinued"
+msgstr "Descontinuado"
+
+#: src/Rest/Routes.php:134
+msgid "Sign in to continue."
+msgstr "Inicie sessão para continuar."
+
+#: src/Rest/Routes.php:138
+msgid "Your account does not have access to the scanner."
+msgstr "A sua conta não tem acesso ao leitor de códigos."
+
+#. translators: %s: the scanned barcode.
+#: src/Rest/Routes.php:155
+#: src/Rest/Routes.php:175
+#: src/Ui/Assets.php:73
+#, php-format
+msgid "Code not found: %s"
+msgstr "Código não encontrado: %s"
+
+#: src/Rest/Routes.php:225
+#: src/Rest/Routes.php:441
+msgid "Invalid product."
+msgstr "Produto inválido."
+
+#: src/Rest/Routes.php:233
+msgid "This product cannot be added."
+msgstr "Este produto não pode ser adicionado."
+
+#: src/Rest/Routes.php:246
+#: src/Rest/Routes.php:271
+#: src/Rest/Routes.php:404
+msgid "Cart unavailable."
+msgstr "Carrinho indisponível."
+
+#: src/Rest/Routes.php:327
+msgid "This product could not be added."
+msgstr "Não foi possível adicionar este produto."
+
+#: src/Rest/Routes.php:422
+msgid "Thank you. We will check this code."
+msgstr "Obrigado. Vamos verificar este código."
+
+#: src/Rest/Routes.php:447
+msgid "Back-in-stock alerts are not available at the moment."
+msgstr "Os avisos de reposição não estão disponíveis de momento."
+
+#: src/Rest/Routes.php:469
+msgid "You are already being notified about this product."
+msgstr "Já está a ser avisado deste produto."
+
+#: src/Rest/Routes.php:470
+msgid "We will let you know as soon as it is back in stock."
+msgstr "Avisamos assim que houver stock."
+
+#: src/Ui/Assets.php:63
+#: src/Ui/element-scan-button.php:20
+#: src/Ui/panel.php:16
+msgid "Scan barcode"
+msgstr "Ler código de barras"
+
+#: src/Ui/Assets.php:64
+#: src/Ui/panel.php:28
+msgid "Close"
+msgstr "Fechar"
+
+#: src/Ui/Assets.php:65
+#: src/Ui/panel.php:25
+msgid "Light"
+msgstr "Luz"
+
+#: src/Ui/Assets.php:66
+#: src/Ui/panel.php:37
+msgid "Enter code"
+msgstr "Introduzir código"
+
+#: src/Ui/Assets.php:67
+#: src/Ui/panel.php:41
+msgid "EAN or SKU"
+msgstr "EAN ou referência"
+
+#: src/Ui/Assets.php:68
+#: src/Ui/panel.php:42
+msgid "Add"
+msgstr "Adicionar"
+
+#: src/Ui/Assets.php:69
+msgid "Undo"
+msgstr "Anular"
+
+#: src/Ui/Assets.php:70
+msgid "Report"
+msgstr "Reportar"
+
+#: src/Ui/Assets.php:71
+msgid "Notify me"
+msgstr "Notificar-me"
+
+#: src/Ui/Assets.php:75
+msgid "pending"
+msgstr "pendente"
+
+#: src/Ui/Assets.php:76
+msgid "No connection. Your codes are saved."
+msgstr "Sem ligação. Os códigos ficam guardados."
+
+#: src/Ui/Assets.php:77
+msgid "We could not access the camera. Allow access in your browser settings or enter the code manually."
+msgstr "Não conseguimos aceder à câmara. Autorize o acesso nas definições do navegador ou introduza o código manualmente."
+
+#: src/Ui/Assets.php:78
+msgid "This device has no camera available. Enter the code manually."
+msgstr "Este dispositivo não tem câmara disponível. Introduza o código manualmente."
+
+#: src/Ui/Assets.php:79
+msgid "The camera does not work inside this app. Open the page in Safari or Chrome."
+msgstr "A câmara não funciona dentro desta aplicação. Abra a página no Safari ou no Chrome."
+
+#: src/Ui/Assets.php:80
+msgid "Open in browser"
+msgstr "Abrir no navegador"
+
+#: src/Ui/Assets.php:81
+msgid "Your session has expired. Sign in again to continue — your scans are saved."
+msgstr "A sessão expirou. Inicie sessão novamente para continuar — as leituras ficam guardadas."
+
+#: src/Ui/Assets.php:82
+msgid "Sign in"
+msgstr "Iniciar sessão"
+
+#: src/Ui/Assets.php:83
+msgid "We recovered your pending scans."
+msgstr "Recuperámos as leituras que tinha pendentes."
+
+#: src/Ui/Assets.php:84
+#, php-format
+msgid "Available: %s"
+msgstr "Disponível: %s"
+
+#: src/Ui/Assets.php:85
+#, php-format
+msgid "%1$s · %2$s in the order"
+msgstr "%1$s · %2$s na encomenda"
+
+#: src/Ui/Assets.php:86
+msgid "Starting the camera…"
+msgstr "A iniciar a câmara…"
+
+#: src/Ui/Assets.php:87
+#, php-format
+msgid "%s item"
+msgstr "%s artigo"
+
+#. translators: %s: number of items on the order.
+#: src/Ui/Assets.php:89
+#, php-format
+msgid "%s items"
+msgstr "%s artigos"
+
+#: src/Ui/Assets.php:90
+msgid "Increase quantity"
+msgstr "Aumentar quantidade"
+
+#: src/Ui/Assets.php:91
+msgid "Decrease quantity"
+msgstr "Diminuir quantidade"
+
+#: src/Ui/Assets.php:92
+msgid "Quantity"
+msgstr "Quantidade"
+
+#: src/Ui/Assets.php:93
+msgid "Remove"
+msgstr "Remover"
+
+#: src/Ui/element-scan-button.php:26
+msgid "Text"
+msgstr "Texto"
+
+#: src/Ui/element-scan-button.php:28
+#: src/Ui/element-scan-button.php:29
+#: src/Ui/element-scan-button.php:58
+#: src/Ui/Shortcode.php:36
+msgid "Scan code"
+msgstr "Ler código"
+
+#: src/Ui/element-scan-button.php:43
+msgid "Visible only on pages where a plugin turns the scanner on (B2B ordering, POS), to users allowed to scan, and on small screens. Use Bricks conditions to restrict it further."
+msgstr "Visível só nas páginas onde um plugin ativa o leitor (encomenda B2B, POS), para quem o pode usar, e em ecrãs pequenos. Use as condições do Bricks para restringir mais."
+
+#: src/Ui/element-scan-button.php:48
+msgid "Also show on large screens"
+msgstr "Mostrar também em ecrãs grandes"
+
+#: src/Ui/element-scan-button.php:50
+msgid "By default the button only shows below the Bricks mobile landscape breakpoint."
+msgstr "Por omissão o botão só aparece abaixo do breakpoint mobile landscape do Bricks."
+
+#: src/Ui/element-scan-button.php:64
+msgid "The button shows on pages where the scanner is active, to users allowed to scan."
+msgstr "O botão aparece nas páginas onde o leitor está ativo, para quem o pode usar."
+
+#: src/Ui/panel.php:54
+msgid "You have not scanned any codes yet."
+msgstr "Ainda não leu nenhum código."
+
+#: src/Ui/panel.php:74
+msgid "Checkout"
+msgstr "Finalizar encomenda"
