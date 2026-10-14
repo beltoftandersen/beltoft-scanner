@@ -110,30 +110,52 @@ class ProductLookup {
 	 * reply never reveals a catalogue this account cannot see. The log keeps
 	 * the difference, because the two need different fixes.
 	 *
+	 * The order matters. Catalog rules come first, so a product this account
+	 * may not see is not revealed by offering its replacement. The replacement
+	 * comes before WooCommerce's own checks, because a discontinued product is
+	 * usually no longer purchasable or in stock, and that is exactly when the
+	 * replacement is wanted. A replacement is only offered if this user could
+	 * order it - offering one the add would then refuse helps nobody.
+	 *
 	 * @return array{status:string, replacement:?WC_Product}
 	 */
 	public static function assess( WC_Product $product, int $user_id ): array {
-		$replacement = self::replacement_for( $product );
+		$refused = self::refused_by_rules( $product, $user_id );
 
-		if ( $replacement instanceof WC_Product ) {
-			return array( 'status' => Log::DISCONTINUED, 'replacement' => $replacement );
-		}
-
-		$refused = apply_filters( self::ASSESS_FILTER, null, $product, $user_id );
-
-		if ( in_array( $refused, array( Log::NOT_VISIBLE, Log::NOT_PURCHASABLE ), true ) ) {
+		if ( $refused ) {
 			return array( 'status' => $refused, 'replacement' => null );
 		}
 
+		$replacement = self::replacement_for( $product );
+
+		if ( $replacement instanceof WC_Product
+			&& $replacement->get_id() !== $product->get_id()
+			&& null === self::refused_by_rules( $replacement, $user_id )
+			&& self::OK === self::sellable( $replacement ) ) {
+			return array( 'status' => Log::DISCONTINUED, 'replacement' => $replacement );
+		}
+
+		return array( 'status' => self::sellable( $product ), 'replacement' => null );
+	}
+
+	/** The consumers' catalog rules: null, or the refusal they returned. */
+	private static function refused_by_rules( WC_Product $product, int $user_id ): ?string {
+		$refused = apply_filters( self::ASSESS_FILTER, null, $product, $user_id );
+
+		return in_array( $refused, array( Log::NOT_VISIBLE, Log::NOT_PURCHASABLE ), true ) ? $refused : null;
+	}
+
+	/** What WooCommerce itself says: purchasable and in stock, or why not. */
+	private static function sellable( WC_Product $product ): string {
 		if ( ! $product->is_purchasable() ) {
-			return array( 'status' => Log::NOT_PURCHASABLE, 'replacement' => null );
+			return Log::NOT_PURCHASABLE;
 		}
 
 		if ( ! $product->is_in_stock() && ! $product->backorders_allowed() ) {
-			return array( 'status' => Log::OUT_OF_STOCK, 'replacement' => null );
+			return Log::OUT_OF_STOCK;
 		}
 
-		return array( 'status' => self::OK, 'replacement' => null );
+		return self::OK;
 	}
 
 	/**

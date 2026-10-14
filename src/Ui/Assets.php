@@ -36,6 +36,8 @@ class Assets {
 			B2B_SCANNER_VERSION
 		);
 
+		wp_add_inline_style( self::HANDLE, self::trigger_css() );
+
 		wp_enqueue_script(
 			self::HANDLE,
 			B2B_SCANNER_URL . 'assets/scanner.js',
@@ -45,6 +47,19 @@ class Assets {
 		);
 
 		wp_localize_script( self::HANDLE, 'B2BScannerData', self::data() );
+	}
+
+	/**
+	 * The button shows only where a camera is likely and the list has stacked:
+	 * below Bricks' mobile_landscape breakpoint. Printed rather than kept in
+	 * scanner.css because a media query cannot use a custom property, and a
+	 * fixed number there would ignore the breakpoint set in Bricks.
+	 */
+	public static function trigger_css(): string {
+		return sprintf(
+			'@media (max-width: %dpx) { .b2bs-trigger { display: inline-flex; } }',
+			Breakpoints::mobile_max_width()
+		);
 	}
 
 	private static function data(): array {

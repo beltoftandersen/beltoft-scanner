@@ -30,11 +30,9 @@
 
 .b2bs-trigger:hover { background: #1d3d2a; }
 
-/* Only where a camera is likely and the list has stacked: the width comes from
-   Bricks' own mobile_landscape breakpoint, passed in as --b2bs-bp. */
-@media (max-width: 767px) {
-	.b2bs-trigger { display: inline-flex; }
-}
+/* Shown below Bricks' mobile_landscape breakpoint by a rule printed with the
+   real width in it (Ui\Assets::trigger_css()) - a media query cannot read a
+   custom property, so the number cannot live here. */
 
 .b2bs-trigger--always { display: inline-flex; }
 

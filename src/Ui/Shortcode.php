@@ -2,7 +2,6 @@
 
 namespace B2BScanner\Ui;
 
-use B2BScanner\Support\Breakpoints;
 use B2BScanner\Support\Context;
 
 defined( 'ABSPATH' ) || exit;
@@ -46,11 +45,10 @@ class Shortcode {
 	 */
 	public static function markup( string $label ): string {
 		return sprintf(
-			'<button type="button" class="b2bs-trigger" data-b2bs-open aria-controls="b2bs-panel" aria-expanded="false" style="--b2bs-bp:%dpx">
+			'<button type="button" class="b2bs-trigger" data-b2bs-open aria-controls="b2bs-panel" aria-expanded="false">
 				<span class="b2bs-trigger__icon" aria-hidden="true"></span>
 				<span class="b2bs-trigger__label">%s</span>
 			</button>',
-			Breakpoints::mobile_max_width(),
 			esc_html( $label )
 		);
 	}

@@ -25,6 +25,7 @@ class AssessTest extends WP_UnitTestCase {
 
 	public function tearDown(): void {
 		remove_all_filters( 'beltoft_scanner_assess' );
+		remove_all_filters( 'b2b_scanner_replacement_for' );
 		parent::tearDown();
 	}
 
@@ -74,5 +75,65 @@ class AssessTest extends WP_UnitTestCase {
 		$this->product->save();
 
 		$this->assertSame( 'out_of_stock', $this->status() );
+	}
+
+	private function replaced_by( WC_Product $replacement ): void {
+		add_filter( 'b2b_scanner_replacement_for', fn() => $replacement->get_id() );
+	}
+
+	private function another_product(): WC_Product {
+		$product = new WC_Product_Simple();
+		$product->set_regular_price( '12' );
+		$product->set_status( 'publish' );
+		$product->save();
+
+		return wc_get_product( $product->get_id() );
+	}
+
+	public function test_a_discontinued_product_offers_its_replacement() {
+		$replacement = $this->another_product();
+		$this->replaced_by( $replacement );
+
+		$verdict = ProductLookup::assess( $this->product, $this->user );
+
+		$this->assertSame( 'discontinued', $verdict['status'] );
+		$this->assertSame( $replacement->get_id(), $verdict['replacement']->get_id() );
+	}
+
+	/** Discontinued products are often no longer sold; the replacement is still offered. */
+	public function test_a_replacement_is_offered_for_a_product_out_of_stock() {
+		$this->product->set_stock_status( 'outofstock' );
+		$this->product->save();
+		$this->replaced_by( $this->another_product() );
+
+		$this->assertSame( 'discontinued', $this->status() );
+	}
+
+	/** A hidden product must not be revealed by offering its replacement. */
+	public function test_the_rules_run_before_the_replacement() {
+		$this->replaced_by( $this->another_product() );
+		add_filter( 'beltoft_scanner_assess', fn( $status, $product ) => $product->get_id() === $this->product->get_id() ? 'not_visible' : $status, 10, 2 );
+
+		$this->assertSame( 'not_visible', $this->status() );
+	}
+
+	public function test_a_replacement_the_user_may_not_order_is_not_offered() {
+		$replacement = $this->another_product();
+		$this->replaced_by( $replacement );
+		add_filter( 'beltoft_scanner_assess', fn( $status, $product ) => $product->get_id() === $replacement->get_id() ? 'not_visible' : $status, 10, 2 );
+
+		$verdict = ProductLookup::assess( $this->product, $this->user );
+
+		$this->assertSame( ProductLookup::OK, $verdict['status'] );
+		$this->assertNull( $verdict['replacement'] );
+	}
+
+	public function test_a_replacement_out_of_stock_is_not_offered() {
+		$replacement = $this->another_product();
+		$replacement->set_stock_status( 'outofstock' );
+		$replacement->save();
+		$this->replaced_by( $replacement );
+
+		$this->assertSame( ProductLookup::OK, $this->status() );
 	}
 }

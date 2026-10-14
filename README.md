@@ -6,23 +6,25 @@ The scanner is a **core that other plugins plug into**. On its own it shows nowh
 
 ## Features
 
-- Reads EAN/GTIN and product SKUs with the camera (ZXing, bundled; no external service), with a torch toggle and manual entry as a fallback.
-- Looks the code up by SKU or by the product's GTIN (`_global_unique_id`), variations included.
-- Adds to the WooCommerce cart in one call per scan, with quantity steps, undo and removal in the panel; the page's cart fragments are refreshed after each change.
-- Keeps working through a dropped connection: scans are queued in the browser and sent when it is back, and recovered after a session expires.
-- Explains why a code cannot be ordered (not found, out of stock, discontinued with a replacement offered) and lets the user report a code or ask to be notified when it is back in stock.
+- Reads EAN-13 and EAN-8 barcodes with the camera: the browser's own `BarcodeDetector` where there is one, otherwise the bundled ZXing build (loaded only then, mostly on iOS). No external service. Torch toggle where the camera has one; the screen is kept awake while scanning.
+- A manual field takes an EAN or a SKU, for codes the camera cannot read. The camera does not read SKU barcodes (Code 128 etc.) - only EAN.
+- Looks the code up by GTIN (`_global_unique_id`, variations first), then by SKU.
+- Adds to the WooCommerce cart in one call per scan. The panel shows the whole order, newest first, with −/+, a typed quantity and remove on each line, the subtotal and a link to checkout. Quantities are capped at the stock when backorders are not allowed. The page's cart fragments are refreshed after each change.
+- Keeps scans through a dropped connection or an expired session: they are queued in the tab (`sessionStorage`) and sent when the connection is back or after signing in again in the same tab.
+- Explains why a code cannot be ordered - not found, out of stock (with "Notify me"), on backorder (added, with a warning), discontinued (with its replacement offered) - and lets the user report a code that was not found.
 - Logs every code that did not give an orderable product (**WooCommerce → Unresolved codes**), so missing barcodes can be fixed at the source.
 
 ## Requirements
 
-- WordPress 6.5+, PHP 8.1+, WooCommerce with the classic cart fragments.
+- PHP 8.1+, WooCommerce 9.2+ (for the GTIN field `_global_unique_id`).
+- Cart markup that updates on `wc_fragments_refreshed` (classic cart widgets, Bricks cart elements). The scanner fetches the fragments itself; `wc-cart-fragments.js` need not be loaded.
 - A plugin that registers at least one context (see below), or the scanner stays hidden.
 - Optional: Bricks (for the scan button element), `beltoft-in-stock-notifier` (for "Notify me").
 
 ## Putting the button on a page
 
-- **Bricks:** add the **Scan barcode** element. By default it only shows below the Bricks *mobile landscape* breakpoint; the element has a setting to show it on large screens too.
-- **Anywhere else:** the `[b2b_scan_button]` shortcode, optional `label="…"`.
+- **Bricks:** add the **Scan barcode** element. By default it only shows below the Bricks *mobile landscape* breakpoint (read from the Bricks settings); the element has a setting to show it on large screens too.
+- **Anywhere else:** the `[b2b_scan_button]` shortcode, optional `label="…"`. It always follows the breakpoint; there is no large-screen option.
 
 Either way the button only renders where a registered context applies and allows the current user. The panel and its assets are printed only on those pages.
 
@@ -73,7 +75,9 @@ add_filter( 'beltoft_scanner_assess', function ( $status, WC_Product $product, i
 }, 10, 3 );
 ```
 
-Return `null` to allow, `'not_visible'` to hide the product (the user is told the code was not found, so a catalogue they cannot see is not revealed; the log records the difference) or `'not_purchasable'`. Any other value is ignored. After your rules the scanner still checks that WooCommerce can sell the product and that it is in stock.
+Return `null` to allow, `'not_visible'` to hide the product or `'not_purchasable'` to refuse it. Both refusals are answered to the user as "code not found", so they learn nothing about a catalogue they cannot use; the log records which it was. Any other value is ignored.
+
+The order of the checks: your rules first, then the replacement (below), then WooCommerce's own - that the product is purchasable and in stock (or allows backorders).
 
 ### Discontinued products — `b2b_scanner_replacement_for`
 
@@ -83,19 +87,19 @@ add_filter( 'b2b_scanner_replacement_for', function ( $replacement, WC_Product $
 }, 10, 2 );
 ```
 
-When a replacement is returned, the scan answers "discontinued" and offers the replacement.
+When a replacement is returned, the scan answers "discontinued" and offers the replacement - even if the scanned product itself is no longer purchasable or in stock. The replacement is only offered if the same user could order it: your `beltoft_scanner_assess` rules allow it and it is purchasable and in stock. Otherwise the scanned product is judged as if it had no replacement. A product your rules refuse is never answered with its replacement.
 
 ## REST API
 
-Namespace `b2b/v1`, cookie-authenticated (`X-WP-Nonce`), every route behind the context check above.
+Namespace `b2b/v1`, cookie-authenticated (`X-WP-Nonce`), every route behind the context check above. The panel treats any `401`/`403` as a lost session: it keeps the scan and offers to sign in.
 
 | Route | Method | Parameters | Does |
 |---|---|---|---|
-| `/lookup` | GET | `code` (required), `add` (bool) | Finds the product for a code and says whether it can be ordered; with `add=1` also adds it and returns the cart. |
+| `/lookup` | GET | `code` (required), `add` (bool) | Finds the product for a code and says whether it can be ordered (`ok`, `backorder`, `out_of_stock`, `discontinued`; not found, `not_visible` and `not_purchasable` → `404`). Misses are logged here. With `add=1` an `ok`/`backorder` product is also added and the cart returned. |
 | `/cart` | GET | — | The current cart lines and subtotal. |
-| `/cart` | POST | `product_id` (required), `delta` (default 1) or `set` | Changes a line's quantity; returns the cart. |
-| `/report` | POST | `code` (required) | Flags a code for the shop to look at. |
-| `/notify` | POST | `product_id` (required), `quantity` | Subscribes the user to a back-in-stock alert (needs `beltoft-in-stock-notifier`). |
+| `/cart` | POST | `product_id` (required), `delta` (default 1) or `set` | Changes a line's quantity (an increase is refused with `409` unless the product assesses `ok`); returns the cart. |
+| `/report` | POST | `code` (required) | Flags the user's latest log entry for that code (or records one) for the shop to look at. |
+| `/notify` | POST | `product_id` (required), `quantity` | Subscribes the user's account email to a back-in-stock alert (needs `beltoft-in-stock-notifier`, otherwise `503`). |
 
 ## Translations
 
@@ -111,5 +115,5 @@ wp i18n make-php languages/beltoft-scanner-pt_PT.po
 ## Development
 
 - Code: `B2BScanner\` PSR-4 under `src/` with the plugin's own autoloader (no Composer at runtime). `src/Support/Context.php` asks the contexts, `src/Catalog/ProductLookup.php` finds and assesses products, `src/Rest/Routes.php` is the API, `src/Ui/` the button, panel and assets, `src/Log/` and `src/Admin/` the unresolved-codes log.
-- Tests: PHPUnit 9.6 with the WordPress test suite. `composer install`, point `WP_TESTS_DIR` at a WordPress test install, then `vendor/bin/phpunit`. The suite loads **only WooCommerce and this plugin** — it must keep passing without any consumer plugin, which is what keeps the core independent of them.
+- Tests: PHPUnit 9.6 with the WordPress test suite. `composer install`, then `WP_TESTS_DIR=/path/to/wordpress-tests-lib vendor/bin/phpunit` (default `/tmp/wordpress-tests-lib`) against a throwaway database. `tests/bootstrap.php` loads WooCommerce from `/var/www/staging.mindthetrash.pt/wp-content/plugins` - change `BELTOFT_SITE_PLUGINS` there to run it elsewhere. The suite loads **only WooCommerce and this plugin** — it must keep passing without any consumer plugin, which is what keeps the core independent of them.
 - The scanner never references a consuming plugin's classes; consumers only use the filters above.
