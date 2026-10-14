@@ -17,7 +17,8 @@ defined( 'ABSPATH' ) || exit;
 class Table {
 
 	private const VERSION_OPTION = 'b2b_scanner_db_version';
-	private const VERSION        = '1';
+	/** 2: same schema - bumped so existing installs re-save the option autoloaded. */
+	private const VERSION        = '2';
 
 	public static function name(): string {
 		global $wpdb;
@@ -67,6 +68,6 @@ class Table {
 			) {$collate};"
 		);
 
-		update_option( self::VERSION_OPTION, self::VERSION, false );
+		update_option( self::VERSION_OPTION, self::VERSION, true );
 	}
 }
