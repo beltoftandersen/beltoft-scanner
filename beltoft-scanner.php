@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: Beltoft B2B Scanner
+ * Plugin Name: Beltoft Scanner
  * Description: Scan product barcodes with the phone camera straight into the trade ordering list.
  * Version:     1.0.5
  * Author:      beltoft.net

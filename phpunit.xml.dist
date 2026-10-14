@@ -7,7 +7,7 @@
 	convertNoticesToExceptions="true"
 	convertWarningsToExceptions="true">
 	<testsuites>
-		<testsuite name="beltoft-b2b-scanner">
+		<testsuite name="beltoft-scanner">
 			<directory suffix="Test.php">./tests/</directory>
 		</testsuite>
 	</testsuites>

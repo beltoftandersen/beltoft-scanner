@@ -19,7 +19,7 @@ require_once $_tests_dir . '/includes/functions.php';
 
 tests_add_filter( 'muplugins_loaded', function () {
 	require BELTOFT_SITE_PLUGINS . '/woocommerce/woocommerce.php';
-	require dirname( __DIR__ ) . '/beltoft-b2b-scanner.php';
+	require dirname( __DIR__ ) . '/beltoft-scanner.php';
 } );
 
 tests_add_filter( 'setup_theme', function () {

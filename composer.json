@@ -1,5 +1,5 @@
 {
-	"name": "beltoft/beltoft-b2b-scanner",
+	"name": "beltoft/beltoft-scanner",
 	"description": "Scan product barcodes with the phone camera into the WooCommerce cart",
 	"type": "wordpress-plugin",
 	"license": "proprietary",
