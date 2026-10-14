@@ -86,6 +86,23 @@
 			),
 			body: opts.body ? JSON.stringify( opts.body ) : undefined
 		} ).then( function ( res ) {
+			var type = res.headers.get( 'Content-Type' ) || '';
+
+			/*
+			 * Something other than this API answered: a login page the request
+			 * was redirected to, a captive Wi-Fi portal, a proxy's error page.
+			 * Read as JSON that was an empty "success", and the scan after it
+			 * failed and was retried forever.
+			 */
+			if ( res.redirected || -1 === type.indexOf( 'json' ) ) {
+				var foreign = new Error( t.offline );
+				foreign.status = res.status;
+				foreign.code = 'not_json';
+				foreign.redirected = res.redirected;
+				foreign.data = {};
+				throw foreign;
+			}
+
 			return res.json().catch( function () { return {}; } ).then( function ( data ) {
 				if ( res.ok ) { return data; }
 				var err = new Error( data.message || 'error' );
@@ -373,7 +390,7 @@
 				if ( sessionLost( err ) ) {
 					askToSignIn();
 				} else {
-					toast( isNetworkError( err ) ? t.offline : err.message, null, 'error' );
+					toast( isNetworkError( err ) || 'not_json' === err.code ? t.offline : err.message, null, 'error' );
 				}
 			} );
 	}
@@ -463,6 +480,13 @@
 		// POST with add=1 resolves the code and puts the unit on the order in one call.
 		return api( '/lookup', { method: 'POST', body: { code: code, add: true, scan_id: id } } )
 			.then( function ( data ) {
+				if ( ! data || ! data.product ) {
+					var odd = new Error( t.offline );
+					odd.status = 200;
+					odd.code = 'not_json';
+					throw odd;
+				}
+
 				if ( 'out_of_stock' === data.status ) {
 					outOfStock( data.product );
 					return;
@@ -555,7 +579,10 @@
 	 * account, which signing in again would not change.
 	 */
 	function sessionLost( err ) {
-		return 401 === err.status || ( 403 === err.status && 'rest_cookie_invalid_nonce' === err.code );
+		return 401 === err.status
+			|| ( 403 === err.status && 'rest_cookie_invalid_nonce' === err.code )
+			// Sent away from the API altogether: something wants a sign-in first.
+			|| ( 'not_json' === err.code && err.redirected );
 	}
 
 	/** fetch() itself failed: no reply at all, whatever navigator.onLine says. */
@@ -586,6 +613,17 @@
 		if ( isNetworkError( err ) ) {
 			queueCode( code, replay, id );
 			retrySoon();
+			return;
+		}
+
+		/*
+		 * Kept, but not retried on a timer: a portal or proxy page would answer
+		 * every retry the same way. The queue goes again when the connection
+		 * comes back or the panel is reopened.
+		 */
+		if ( 'not_json' === err.code ) {
+			queueCode( code, true, id );
+			toast( t.offline, null, 'warn' );
 			return;
 		}
 
